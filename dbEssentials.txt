@@ -1,0 +1,7 @@
+Steps to run a new table on a database:
+Assuming we have a database with two existing tables that already have data in them;
+To add a new table called "messages", first, generate the prisma object. Then, migrate the changes to the PostgreSQL database.
+After the migration is complete, proceed with database seeding. This should show the inserted items either in prisma studio or pgAdmin4
+1. npx prisma generate
+2. npx prisma migrate dev --name add_homepage_and_projects_and_messages_tables
+3. npx tsx prisma/message.ts
