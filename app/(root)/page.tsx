@@ -44,7 +44,7 @@ export default async function HomePage() {
         name = { messageContent.name }
         title= {messageContent.title}
         message= {messageContent.message}
-        imageUrl="/images/team/programsDirector.jpg"
+        imageUrl= {messageContent.nameImageUrl}
       />
     </>
   );

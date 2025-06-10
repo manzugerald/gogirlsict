@@ -4,6 +4,34 @@ import { PrismaAdapter } from "@next-auth/prisma-adapter";
 import { prisma } from "@/db/prisma";
 import bcrypt from "bcrypt";
 
+// Extend the session object to include our custom fields
+declare module "next-auth" {
+  interface Session {
+    user: {
+      id: string;
+      username: string;
+      firstName: string;
+      lastName: string;
+    };
+  }
+
+  interface User {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+  }
+}
+
+declare module "next-auth/jwt" {
+  interface JWT {
+    id: string;
+    username: string;
+    firstName: string;
+    lastName: string;
+  }
+}
+
 export const authOptions: NextAuthOptions = {
   adapter: PrismaAdapter(prisma),
   session: {
@@ -28,7 +56,12 @@ export const authOptions: NextAuthOptions = {
         const isValid = await bcrypt.compare(credentials.password, user.password);
         if (!isValid) return null;
 
-        return user;
+        return {
+          id: user.id,
+          username: user.username,
+          firstName: user.firstName,
+          lastName: user.lastName,
+        };
       },
     }),
   ],
@@ -36,6 +69,7 @@ export const authOptions: NextAuthOptions = {
     async jwt({ token, user }) {
       if (user) {
         token.id = user.id;
+        token.username = user.username;
         token.firstName = user.firstName;
         token.lastName = user.lastName;
       }
@@ -43,18 +77,20 @@ export const authOptions: NextAuthOptions = {
     },
     async session({ session, token }) {
       if (session.user) {
-        session.user.id = token.id as string;
-        session.user.firstName = token.firstName as string;
-        session.user.lastName = token.lastName as string;
+        session.user.id = token.id;
+        session.user.username = token.username;
+        session.user.firstName = token.firstName;
+        session.user.lastName = token.lastName;
       }
       return session;
     },
   },
   pages: {
-    signIn: "/admin/login",
+    signIn: "/admin",
   },
   secret: process.env.NEXTAUTH_SECRET,
 };
 
+// API route handler
 const handler = NextAuth(authOptions);
 export { handler as GET, handler as POST };

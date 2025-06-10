@@ -1,19 +1,69 @@
-// app/projects/new/route.ts (for POST)
+// app/api/projects/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/db/prisma";
+import { getServerSession } from "next-auth";
+import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
+// Handle GET (fetch all projects)
+export async function GET() {
+  try {
+    const session = await getServerSession(authOptions);
+
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
+
+    const projects = await prisma.project.findMany({
+      orderBy: { createdAt: "desc" },
+      include: {
+      createdBy: { select: { username: true } },
+      approvedBy: { select: { username: true } },
+      updatedBy: { select: { username: true } },
+      },
+    });
+
+    return NextResponse.json(projects);
+  } catch (err) {
+    console.error("Error fetching projects:", err);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
+}
+
+// Handle POST (create new project)
 export async function POST(req: Request) {
-  const data = await req.json();
+  try {
+    const session = await getServerSession(authOptions);
 
-  const project = await prisma.project.create({
-    data: {
-      title: data.title,
-      slug: data.slug,
-      content: data.content,
-      status: data.status,
-      images: data.images,
-    },
-  });
+    if (!session?.user?.id) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
 
-  return NextResponse.json(project);
+    const data = await req.json();
+    const { title, slug, content, images, projectStatus, publishStatus } = data;
+
+    if (!title || !slug || !content) {
+      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+    }
+
+    const userId = session.user.id;
+
+    const project = await prisma.project.create({
+      data: {
+        title,
+        slug,
+        content,
+        images,
+        projectStatus,
+        publishStatus,
+        createdById: userId,
+        approvedById: userId, // Optional: change this logic for approval workflows
+        updatedById: userId,
+      },
+    });
+
+    return NextResponse.json(project);
+  } catch (error) {
+    console.error("Failed to create project:", error);
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+  }
 }

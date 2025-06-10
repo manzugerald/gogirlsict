@@ -1,32 +1,38 @@
 'use client';
-import { Project } from "@/lib/generated/prisma";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card } from "@/components/ui/card";
 import Image from "next/image";
 
-export function ProjectList({ projects }: { projects: Project[] }) {
+export interface ProjectCardProps {
+  title: string;
+  status: string;
+  images: string[];
+}
+
+interface ProjectListProps {
+  projects: ProjectCardProps[];
+}
+
+export function ProjectList({ projects }: ProjectListProps) {
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-      {projects.map((project) => (
-        <Card key={project.id} className="overflow-hidden">
-          <div className="flex">
-            {/* Left: Image */}
-            <div className="w-32 h-32 relative flex-shrink-0">
-              <Image
-                src={project.images[0] || "/images/placeholder.png"}
-                alt={project.title}
-                fill
-                className="object-cover rounded-l-md"
-              />
-            </div>
+      {projects.map((project, index) => (
+        <Card key={index} className="overflow-hidden flex flex-col p-0">
+          {/* Image flush at the top */}
+          <div className="relative w-full h-36 overflow-hidden">
+            <Image
+              src={project.images?.[0]}
+              alt={project.title}
+              fill
+              className="object-cover mb-0 pb-0"
+            />
+          </div>
 
-            {/* Right: Content */}
-            <CardContent className="p-4 flex flex-col justify-between space-y-2 w-full">
-              <h2 className="text-lg font-semibold">{project.title}</h2>
-              <p className="text-sm text-muted-foreground line-clamp-3">{project.content}</p>
-              <span className="text-xs font-medium px-2 py-1 bg-secondary rounded w-fit">
-                {project.status}
+          {/* Content with no space above */}
+          <div className="pt-0 flex flex-col -mt-4 text-center">
+            <span className="text-md font-semibold leading-none m-0 p-0">{project.title}</span>
+              <span className="text-xs bg-pink-600 font-medium rounded mt-2 px-2 py-1">
+                {`Project Status: ${project.status}`}
               </span>
-            </CardContent>
           </div>
         </Card>
       ))}

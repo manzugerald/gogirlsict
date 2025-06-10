@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE "Report" ADD COLUMN     "accessCount" INTEGER NOT NULL DEFAULT 0,
+ADD COLUMN     "downloadCount" INTEGER NOT NULL DEFAULT 0;

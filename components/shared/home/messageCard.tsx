@@ -1,52 +1,58 @@
-import { Card, CardContent } from "@/components/ui/card"
-import { QuoteIcon } from "lucide-react"
-import Image from "next/image"
+import { Card, CardContent } from "@/components/ui/card";
+import Image from "next/image";
 
 interface MessageCardProps {
-  message: string
-  name: string
-  title?: string
-  imageUrl: string
+  message: string;
+  name: string;
+  title?: string;
+  imageUrl?: string;
 }
 
-const MessageCard = ({
-  message,
-  name,
-  title = "Director",
-  imageUrl,
-}: MessageCardProps) => {
+const MessageCard = ({ message, name, title, imageUrl }: MessageCardProps) => {
   return (
-    <Card className="relative bg-card border shadow-md rounded-xl p-6 max-w-4xl mx-auto">
-      <CardContent className="space-y-4 relative z-10">
-        {/* Header with image */}
-        <div className="flex items-center space-x-4">
-          <div className="relative w-16 h-16 rounded-full overflow-hidden ring-2 ring-pink-600">
+    <Card className="bg-card border shadow-md rounded-xl max-w-4xl mx-auto">
+      <CardContent className="p-6 space-y-6">
+
+        {/* Title (top-left) */}
+        {title && (
+          <div className="text-left">
+            <h2 className="text-xl font-bold text-foreground">{title}</h2>
+          </div>
+        )}
+
+        {/* Image (centered) */}
+        <div className="flex justify-center">
+          <div className="relative w-32 h-32 rounded-full overflow-hidden ring-4 ring-pink-600 shadow-lg">
             <Image
-              src={imageUrl}
+              src={imageUrl ?? "/assets/images/projects/p1.jpg"}
               alt={name}
               fill
               className="object-cover"
             />
           </div>
-          <div>
-            <h3 className="text-lg font-semibold text-foreground">{name}</h3>
-            <p className="text-sm text-muted-foreground">{title}</p>
-          </div>
         </div>
 
-        {/* Quote Message */}
-        <div className="flex items-start space-x-3">
-          
-          <blockquote className="relative italic font-serif text-muted-foreground text-xl leading-relaxed px-4">
-            <span className="text-pink-600 text-5xl leading-none font-bold">“</span>
-            {message}
-            <br />
-            <span className="text-pink-600 text-5xl leading-none font-bold">”</span>
-          </blockquote>
+        {/* Bottom Row: Message + Name on left, Title on right */}
+        <div className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4 mt-4">
+          {/* Message + Name */}
+          <div className="sm:max-w-[75%]">
+            <blockquote className="italic text-muted-foreground text-lg leading-relaxed">
+              “{message}”
+            </blockquote>
+            <p className="mt-2 text-sm font-medium text-foreground">— {name}</p>
+          </div>
+
+          {/* Title (again as status in bottom-right) */}
+          {title && (
+            <div className="text-sm text-right text-muted-foreground">
+              {title}
+            </div>
+          )}
         </div>
+
       </CardContent>
     </Card>
-  )
-}
+  );
+};
 
-export default MessageCard
+export default MessageCard;

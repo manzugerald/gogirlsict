@@ -4,20 +4,28 @@ import { Button } from "@/components/ui/button";
 import ModeToggle from "../header/mode-toggle";
 import { LogIn, LogOut } from "lucide-react";
 import { usePathname, useRouter } from "next/navigation";
-import { useSession, signOut, signIn } from "next-auth/react";
+import Image from "next/image";
 
-const AdminMenu = () => {
+interface AdminMenuProps {
+  isAuthenticated: boolean;
+  user?: {
+    firstName: string;
+    lastName: string;
+    image?: string;
+  };
+}
+
+const AdminMenu = ({ isAuthenticated, user }: AdminMenuProps) => {
   const pathname = usePathname();
   const router = useRouter();
-  const { data: session } = useSession();
-
   const isLoginPage = pathname === "/admin";
 
   const handleLogout = async () => {
-    await signOut({ callbackUrl: "/" });
+    // Call signOut where this component is used
+    router.push("/api/auth/signout"); // or handle via props callback
   };
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     router.push("/admin");
   };
 
@@ -32,16 +40,24 @@ const AdminMenu = () => {
         </>
       ) : (
         <>
-          {session?.user && (
-            <>
-              <span className="font-medium text-sm">
-                Hello, {session.user.firstName} {session.user.lastName}
+          {isAuthenticated && user && (
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 relative rounded-full overflow-hidden border border-gray-300 dark:border-gray-600">
+                <Image
+                  src={user.image || "/default-avatar.png"}
+                  alt={`${user.firstName} ${user.lastName}`}
+                  fill
+                  className="object-cover"
+                />
+              </div>
+              <span className="font-medium text-sm text-foreground">
+                Hello, {user.firstName} {user.lastName}
               </span>
               <Button variant="ghost" onClick={handleLogout}>
                 <LogOut className="mr-1 w-4 h-4" /> Logout
               </Button>
               <ModeToggle />
-            </>
+            </div>
           )}
         </>
       )}

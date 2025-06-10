@@ -1,62 +1,90 @@
 // Import PrismaClient from '@prisma/client' to use the official generated client
 // import { PrismaClient } from '@/lib/generated/prisma';
-import { PrismaClient } from '@/lib/generated/prisma';
+
+
 import { slugify } from '@/lib/utils';
 
-const prisma = new PrismaClient();
+
+import { PrismaClient } from '@/lib/generated/prisma';
+import bcrypt from 'bcrypt';
+
+const prisma = new PrismaClient()
 
 async function main() {
-  // Seed Projects (with checks to avoid duplicate slugs)
-  const projects = [
-    {
-      title: 'Website Redesign',
-      content: 'Redesigning the landing page and portfolio.',
-      images: ['/images/projects/p1.jpg'],
-      status: 'active',
+  const hashedPassword = await bcrypt.hash('goGirls123', 10)
+  const admin = await prisma.user.create({
+    data: {
+      firstName: 'Eva',
+      lastName: 'Yayi',
+      username: 'evayayi',
+      password: hashedPassword, // Ideally hashed
+      email: 'evayayi@gogirlsict.org',
+      role: 'admin',
+      image: '/assets/images/users/evayayi.jpg',
     },
-    {
-      title: 'Mobile App Launch',
-      content: 'Launching the GoGirls mobile app',
-      images: ['/images/projects/p2.png'],
-      status: 'completed',
+  })
+
+  const project = await prisma.project.create({
+    data: {
+      title: 'Community Outreach',
+      slug: slugify('Community Outreach'),
+      content: 'Details about community outreach.',
+      images: ['/assets/images/project/p1.jpg'],
+      projectStatus: 'active',
+      publishStatus: 'published',
+      createdById: admin.id,
+      updatedById: admin.id,
+      approvedById: admin.id,
     },
-  ];
+  })
 
-  for (const project of projects) {
-    await prisma.project.upsert({
-      where: { slug: slugify(project.title) },
-      update: {}, // no updates for simplicity
-      create: {
-        title: project.title,
-        slug: slugify(project.title),
-        content: project.content,
-        images: project.images,
-        status: project.status as any, // or better: define type explicitly in your schema
-      },
-    });
-  }
+  await prisma.report.create({
+    data: {
+      title: '2025 Q1 Report',
+      slug: slugify('2025 Q1 Report'),
+      images: ['/assets/images/report/reportTemplate.png'],
+      files: ['/assets/pdfs/report/sample2.pdf'],
+      publishStatus: 'published',
+      accessCount: 0,
+      downloadCount: 0,
+      createdById: admin.id,
+      updatedById: admin.id,
+      approvedById: admin.id,
+      projectId: project.id,
+    },
+  })
 
-  // Seed Homepage (only one row expected)
-  const homepageExists = await prisma.homePage.findFirst();
+  await prisma.homePage.create({
+    data: {
+      heroVideo: '/assets/videos/homePage/heroVideo.mov',
+      vision: 'Empowering communities.',
+      mission: 'Technology for all.',
+      focus: 'Education and inclusion.',
+      coreValues: 'Integrity, Innovation, Inclusion.',
+    },
+  })
 
-  if (!homepageExists) {
-    await prisma.homePage.create({
-      data: {
-        heroVideo: '/videos/hero.mov',
-        vision: 'Empowering girls through technology.',
-        mission: 'To promote digital literacy among young women.',
-        focus: 'Tech education, mentorship, and innovation.',
-        coreValues: 'Inclusivity, Innovation, Empowerment, Integrity',
-      },
-    });
-  }
+  await prisma.message.create({
+    data: {
+      title: 'Welcome Message',
+      affiliated: 'Founder',
+      name: 'Eva Yayi',
+      message: 'We are excited to launch our new programs',
+      nameImageUrl: '/assets/images/messages/nameImages/programsDirector.jpg',
+      messageStatus: 'published',
+      createdById: admin.id,
+      updatedById: admin.id,
+      approvedById: admin.id,
+    },
+  })
 }
 
 main()
-  .catch((e) => {
-    console.error('❌ Seeding failed:', e);
-    process.exit(1);
+  .then(() => {
+    console.log('✅ Seeding complete')
+    return prisma.$disconnect()
   })
-  .finally(async () => {
-    await prisma.$disconnect();
-  });
+  .catch((e) => {
+    console.error('❌ Seeding failed:', e)
+    return prisma.$disconnect()
+  })

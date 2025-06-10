@@ -10,7 +10,7 @@ const Header = () => {
         {/* Logo + App Name */}
         <Link href="/" className="flex items-center shrink-0">
           <Image
-            src="/images/goGirlsLogoV2.svg"
+            src="/assets/images/system/goGirlsLogoV2.svg"
             alt={`${APP_NAME} logo`}
             height={60}
             width={60}
