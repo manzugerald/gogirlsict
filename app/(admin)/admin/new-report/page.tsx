@@ -5,10 +5,26 @@ import { useRouter } from "next/navigation";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
-import { slugify } from "@/lib/utils";
 
 const publishOptions = ["draft", "published"] as const;
 type PublishStatus = (typeof publishOptions)[number];
+
+async function uploadFile(file: File): Promise<string> {
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const res = await fetch("/api/reports/upload", {
+    method: "POST",
+    body: formData,
+  });
+
+  if (!res.ok) {
+    throw new Error("File upload failed");
+  }
+
+  const { path } = await res.json();
+  return path as string;
+}
 
 export default function CreateReportForm() {
   const router = useRouter();
@@ -44,29 +60,25 @@ export default function CreateReportForm() {
     e.preventDefault();
     setLoading(true);
 
-    // Compose the asset paths for DB
-    const imagePaths = imageFiles.map(
-      (file) => `/assets/images/reports/${file.name}`
-    );
-    const pdfPaths = pdfFiles.map(
-      (file) => `/assets/pdfs/report/${file.name}`
-    );
-
-    const slug = slugify(form.title.trim());
-
-    // TODO: Upload files to your server/storage here if needed
-
-    const payload = {
-      title: form.title.trim(),
-      images: imagePaths,
-      files: pdfPaths,
-      publishStatus: form.publishStatus,
-      accessCount: 0,
-      downloadCount: 0,
-      // projectId, approvedById, updatedById can be added if your UI supports them
-    };
-
     try {
+      // Upload images
+      const imagePaths = await Promise.all(
+        imageFiles.map(file => uploadFile(file))
+      );
+      // Upload PDFs
+      const pdfPaths = await Promise.all(
+        pdfFiles.map(file => uploadFile(file))
+      );
+
+      const payload = {
+        title: form.title.trim(),
+        images: imagePaths,
+        files: pdfPaths,
+        publishStatus: form.publishStatus,
+        accessCount: 0,
+        downloadCount: 0,
+      };
+
       const res = await fetch("/api/reports", {
         method: "POST",
         headers: { "Content-Type": "application/json" },

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import MoreReports from '@/components/resources/MoreReports';
+import { Download, FileText } from 'lucide-react';
 
 export interface ReportCardProps {
   title: string;
@@ -12,6 +13,11 @@ export interface ReportCardProps {
   downloadCount: number;
   createdAt: string;
   updatedAt: string;
+  createdBy?: {
+    firstName?: string;
+    lastName?: string;
+    image?: string;
+  };
 }
 
 interface ReportDetailsProps {
@@ -118,19 +124,58 @@ export default function ReportDetails({
 
   if (!selectedReport) return null;
 
+  // For uploader info
+  const uploader = selectedReport.createdBy;
+  const uploaderName = uploader
+    ? [uploader.firstName, uploader.lastName].filter(Boolean).join(' ')
+    : 'Unknown';
+  const uploaderPhoto = uploader?.image || undefined;
+
+  //debug
+  console.log('Uploader debug:', {
+    uploader,
+    uploaderName,
+    uploaderPhoto
+  });
+
   return (
     <div className="mt-8 w-full flex flex-col items-center">
-      {/* Back Button */}
-      <div className="w-full flex justify-center">
-        <button
-          className="mb-6 px-4 py-2 bg-gray-200 dark:bg-neutral-800 rounded hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-100 font-medium flex items-center"
-          onClick={onBack}
-        >
-          ← Back to reports
-        </button>
+      {/* Title & Uploaded By */}
+      <div className="w-full max-w-7xl mx-auto mb-0 rounded bg-gray-100 dark:bg-neutral-800 transition-colors duration-200">
+        <div className="flex flex-col items-center w-full py-6">
+          <h2 className="text-2xl md:text-3xl font-bold text-center w-full mb-3">
+            {selectedReport.title}
+          </h2>
+          <div className="flex items-center justify-center gap-2 rounded px-4 py-2">
+            <span className="text-sm text-gray-700 dark:text-gray-200">Uploaded By:</span>
+            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
+              {uploader?.firstName || "Unknown"}
+              {uploader?.lastName ? ` ${uploader.lastName}` : ""}
+            </span>
+            {uploader?.image && (
+              <img
+                src={uploader.image}
+                alt={
+                  uploader?.firstName || uploader?.lastName
+                    ? `${uploader.firstName || ""} ${uploader.lastName || ""}`.trim()
+                    : "Uploader"
+                }
+                className="w-7 h-7 rounded-full object-cover border border-white"
+                style={{ background: "#fff" }}
+              />
+            )}
+          </div>
+        </div>
       </div>
+      {/* Back to reports button below the title/uploader div */}
+      <button
+        className="mt-4 mb-2 px-4 py-2 bg-gray-200 dark:bg-neutral-800 rounded hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-100 font-medium flex items-center"
+        onClick={onBack}
+      >
+        ← Back to reports
+      </button>
       {/* Responsive layout: image/table/MoreReports */}
-      <div className="w-full flex flex-col lg:flex-row items-start justify-center gap-4">
+      <div className="w-full max-w-7xl mx-auto flex flex-col lg:flex-row items-start justify-center gap-4">
         {/* Left: Image + Download */}
         <div
           className="w-full flex-shrink-0 flex flex-col items-center lg:items-start justify-center lg:justify-start"
@@ -149,20 +194,31 @@ export default function ReportDetails({
           {/* Download Button moved here */}
           {selectedReport.files?.[0] && (
             <button
-              className="flex items-center mt-4 bg-red-600 hover:bg-red-700 dark:bg-red-700 dark:hover:bg-red-800 text-white rounded shadow transition"
-              style={{
-                width: "100%",
-                maxWidth: `${IMAGE_WIDTH}px`,
-                minWidth: `${IMAGE_WIDTH}px`,
-                justifyContent: 'center',
-                padding: '0.5rem 0'
-              }}
-              onClick={handleDownload}
-            >
-              <PdfIcon />
-              Download Report
-              <DownloadIcon />
-            </button>
+            className={`
+              flex items-center mt-4 bg-[#9f004d] text-white rounded shadow transition
+              w-full
+              max-w-[${IMAGE_WIDTH}px]
+              min-w-[${IMAGE_WIDTH}px]
+              justify-center
+              py-2
+              hover:bg-gray-100 hover:text-[#9f004d]
+              dark:hover:bg-neutral-100 dark:hover:text-[#9f004d]
+              group
+            `}
+            onClick={handleDownload}
+          >
+          
+            <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+              <FileText size={18} color="white" />
+            </span>
+            Download Report
+            {/* <Download
+              className="w-5 h-5 ml-2 transition-colors duration-200 group-hover:text-[#9f004d] text-white"
+              /> */}
+              <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+                <Download size={18} color="white" />
+              </span>
+          </button>
           )}
         </div>
         {/* Middle: Table */}
@@ -172,7 +228,7 @@ export default function ReportDetails({
               <tr>
                 <th
                   colSpan={2}
-                  className="border border-neutral-200 dark:border-neutral-600 px-4 py-2 text-left text-lg bg-gray-100 dark:bg-neutral-700 font-semibold"
+                  className="border border-neutral-200 dark:border-neutral-600 px-4 py-2 text-center text-lg bg-gray-100 dark:bg-neutral-700 font-semibold"
                 >
                   Report Information
                 </th>

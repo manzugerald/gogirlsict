@@ -1,0 +1,21 @@
+/* custom-swiper.css */
+.swiper-button-next,
+.swiper-button-prev {
+  color: #9f004d;
+  font-weight: bold;
+  transition: transform 0.2s;
+}
+
+.swiper-button-next:hover,
+.swiper-button-prev:hover {
+  transform: scale(1.15);
+}
+
+.swiper-pagination-bullet {
+  background-color: #e2e2e2;
+  opacity: 1;
+}
+
+.swiper-pagination-bullet-active {
+  background-color: #9f004d;
+}

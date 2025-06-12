@@ -4,25 +4,24 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 import { slugify } from "@/lib/utils";
 
-// Handle GET (fetch all reports)
+// Handle GET (fetch all reports) -- PUBLIC
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const reports = await prisma.report.findMany({
       orderBy: { createdAt: "asc" },
       include: {
-        createdBy: { select: { firstName: true } },
-        approvedBy: { select: { firstName: true } },
-        updatedBy: { select: { firstName: true } },
+        createdBy: { 
+          select: { 
+            firstName: true, 
+            lastName: true, 
+            image: true 
+          } 
+        },
+        approvedBy: { select: { firstName: true, lastName: true } },
+        updatedBy: { select: { firstName: true, lastName: true } },
         project: { select: { title: true, id: true } }
       },
     });
-
     return NextResponse.json(reports);
   } catch (err) {
     console.error("Error fetching reports:", err);
@@ -30,7 +29,7 @@ export async function GET() {
   }
 }
 
-// Handle POST (create new report)
+// Handle POST (create new report) -- AUTH REQUIRED
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);

@@ -1,25 +1,16 @@
 import { getAllProjects } from "@/lib/actions/projects";
-import { ProjectList, ProjectCardProps } from "@/components/shared/projects/project-list";
-import ProjectHero from "@/components/shared/header/project-header";
+import ProjectsPageClient from "./ProjectsPageClient";
 
-export const metadata = {
-  title: 'Projects'
-};
-
+// This is your server component
 export default async function ProjectsPage() {
   const projects = await getAllProjects();
-  
-  const projectsData: ProjectCardProps[] = projects.map((project) => ({
+
+  const projectsData = projects.map((project) => ({
     title: project.title,
     status: project.projectStatus,
     images: project.images?.length ? project.images : ["/assets/images/projects/p2.png"],
+    slug: project.slug,
   }));
-  return (
-    <>
-      <ProjectHero />
-      <section className="wrapper">
-        <ProjectList projects={projectsData} />
-      </section>
-      </>
-  );
+
+  return <ProjectsPageClient projects={projectsData} />;
 }

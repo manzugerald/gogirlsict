@@ -2,9 +2,10 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/db/prisma";
 import { Prisma } from "@prisma/client";
 
-export async function POST(req: Request, { params }: { params: { slug: string } }) {
+export async function POST(req: Request, context: { params: { slug: string } }) {
   try {
-    const { slug } = params;
+    // Await params to comply with Next.js dynamic API route requirements
+    const { slug } = await context.params;
     const report = await prisma.report.update({
       where: { slug },
       data: { accessCount: { increment: 1 } },
@@ -12,10 +13,10 @@ export async function POST(req: Request, { params }: { params: { slug: string } 
     });
     return NextResponse.json({ accessCount: report.accessCount });
   } catch (error: any) {
-    // Prisma throws an error with code 'P2025' if no record found
+    // Use the PrismaClientKnownRequestError from @prisma/client/runtime/library if not available on Prisma namespace
+    // Fallback: check error.code directly if unable to use the PrismaClientKnownRequestError type
     if (
-      error instanceof Prisma.PrismaClientKnownRequestError &&
-      error.code === 'P2025'
+      (error?.code === 'P2025')
     ) {
       return NextResponse.json({ error: "Report not found" }, { status: 404 });
     }

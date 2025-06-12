@@ -1,24 +1,18 @@
-// app/api/projects/route.ts
 import { NextResponse } from "next/server";
 import { prisma } from "@/db/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/app/api/auth/[...nextauth]/route";
 
-// Handle GET (fetch all projects)
+// Handle GET (fetch all projects, no auth required)
 export async function GET() {
   try {
-    const session = await getServerSession(authOptions);
-
-    if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const projects = await prisma.project.findMany({
       orderBy: { createdAt: "desc" },
       include: {
-      createdBy: { select: { username: true } },
-      approvedBy: { select: { username: true } },
-      updatedBy: { select: { username: true } },
+        createdBy: { select: { username: true } },
+        approvedBy: { select: { username: true } },
+        updatedBy: { select: { username: true } },
+        reports: true, // include related reports if you want full data
       },
     });
 
@@ -29,7 +23,7 @@ export async function GET() {
   }
 }
 
-// Handle POST (create new project)
+// Handle POST (create new project, auth required)
 export async function POST(req: Request) {
   try {
     const session = await getServerSession(authOptions);
