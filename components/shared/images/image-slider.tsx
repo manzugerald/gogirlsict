@@ -7,7 +7,7 @@ import 'swiper/css';
 import 'swiper/css/navigation';
 import 'swiper/css/thumbs';
 import 'swiper/css/pagination';
-import '@/assets/styles/custom-swiper.css'; // we'll add styles here
+import '@/assets/styles/custom-swiper.css'; 
 
 interface ProjectImageSliderProps {
   images: string[];

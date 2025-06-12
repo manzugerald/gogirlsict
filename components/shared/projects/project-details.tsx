@@ -1,21 +1,9 @@
 'use client';
 
 import { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
-import remarkGfm from "remark-gfm";
-
-import LightGallery from 'lightgallery/react';
-import lgThumbnail from 'lightgallery/plugins/thumbnail';
-import lgZoom from 'lightgallery/plugins/zoom';
-import lgAutoplay from 'lightgallery/plugins/autoplay';
-
-import 'lightgallery/css/lightgallery.css';
-import 'lightgallery/css/lg-thumbnail.css';
-import 'lightgallery/css/lg-zoom.css';
-import 'lightgallery/css/lg-autoplay.css';
-
 import ImageSlider from "../images/image-slider";
 import LightGalleryGrid from "../images/light-gallery";
+import TiptapJsonViewer from "@/components/editor/tiptap-json-viewer";
 
 interface ProjectDetailsProps {
   slug: string;
@@ -45,8 +33,18 @@ export default function ProjectDetails({ slug, onBack }: ProjectDetailsProps) {
 
   const images = project.images?.length ? project.images : ["/assets/images/projects/p2.png"];
 
+  // Make sure content is a JSON object
+  let tiptapContent: object | null = null;
+  try {
+    tiptapContent = typeof project.content === "string"
+      ? JSON.parse(project.content)
+      : project.content;
+  } catch {
+    tiptapContent = null;
+  }
+
   return (
-    <>
+    <div className="bg-background text-foreground min-h-screen transition-colors">
       {/* Full-width slider */}
       {images.length > 0 ? (
         <div className="w-full">
@@ -57,22 +55,21 @@ export default function ProjectDetails({ slug, onBack }: ProjectDetailsProps) {
       )}
 
       {/* Main content below slider */}
-      <div className="max-w-5xl mx-auto p-6">
+      <div className="wrapper max-w-5xl mx-auto p-6">
         <button onClick={onBack} className="text-sm text-blue-600 underline mb-4">
           ← Back to Projects
         </button>
-        
-        {/* Markdown content */}
+
         <h1 className="text-2xl font-bold mt-8">{project.title}</h1>
-        {project.content && typeof project.content === "string" && (
-          <div className="prose mt-6 max-w-none">
-            <ReactMarkdown remarkPlugins={[remarkGfm]}>
-              {project.content}
-            </ReactMarkdown>
-          </div>
-        )}
+        <div className="prose dark:prose-invert mt-6 max-w-none">
+          {tiptapContent ? (
+            <TiptapJsonViewer content={tiptapContent} className="prose dark:prose-invert" />
+          ) : (
+            <div className="text-red-500">Error displaying content.</div>
+          )}
+        </div>
       </div>
       <LightGalleryGrid images={images} title={project.title} />
-    </>
+    </div>
   );
 }

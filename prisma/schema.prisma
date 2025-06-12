@@ -12,7 +12,7 @@ model Project {
   id            Int           @id @default(autoincrement())
   title         String
   slug          String        @unique
-  content       String
+  content       Json
   images        String[]
   projectStatus Status
   publishStatus PublishStatus @default(draft)

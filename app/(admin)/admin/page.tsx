@@ -2,22 +2,26 @@
 
 import { signIn, useSession } from 'next-auth/react';
 import { useState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 
 export default function AdminLoginPage() {
   const { data: session, status } = useSession();
   const router = useRouter();
+  const searchParams = useSearchParams();
 
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // Get the callback url from the query params, or fallback to /admin/dashboard
+  const callbackUrl = searchParams?.get('callbackUrl') || '/admin/dashboard';
+
   useEffect(() => {
     if (status === 'authenticated') {
-      router.replace('/admin/dashboard');
+      router.replace(callbackUrl);
     }
-  }, [status, router]);
+  }, [status, router, callbackUrl]);
 
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -28,14 +32,15 @@ export default function AdminLoginPage() {
       redirect: false,
       username,
       password,
+      callbackUrl, // pass callbackUrl to signIn
     });
 
     setLoading(false);
 
     if (res?.error) {
       setError('Invalid username or password');
-    } else {
-      router.push('/admin/dashboard');
+    } else if (res?.url) {
+      router.push(res.url); // NextAuth will return the callback url here
     }
   };
 

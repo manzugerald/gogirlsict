@@ -1,0 +1,246 @@
+/* Tiptap editor area styling */
+.tiptap {
+    min-height: 160px;
+    /* border: 1px solid #e5e7eb; */
+    border-radius: 6px;
+    padding: 10px;
+    background: transparent;
+    font-size: 1rem;
+    line-height: 1.5;
+    outline: none;
+  }
+  
+  /* WYSIWYG styles for content elements */
+  .tiptap strong { font-weight: bold; }
+  .tiptap em { font-style: italic; }
+  .tiptap u { text-decoration: underline; }
+  .tiptap s { text-decoration: line-through; }
+  
+  .tiptap h1, .tiptap h2, .tiptap h3 {
+    font-weight: bold;
+    margin-top: 1.2em;
+    margin-bottom: .5em;
+    line-height: 1.2;
+  }
+  .tiptap h1 { font-size: 2em; }
+  .tiptap h2 { font-size: 1.5em; }
+  .tiptap h3 { font-size: 1.25em; }
+  
+  .tiptap ul {
+    list-style-type: disc;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+  }
+  .tiptap ol {
+    list-style-type: decimal;
+    margin-left: 1.5em;
+    margin-bottom: 1em;
+  }
+  .tiptap li { margin-bottom: 0.25em; }
+  
+  .tiptap blockquote {
+    border-left: 3px solid #cbd5e1;
+    margin: 1em 0;
+    padding-left: 1em;
+    color: #64748b;
+    font-style: italic;
+    background: #f1f5f9;
+  }
+  
+  .tiptap a {
+    color: #2563eb;
+    text-decoration: underline;
+    word-break: break-all;
+  }
+  
+  .tiptap img {
+    max-width: 100%;
+    border-radius: 4px;
+    margin: 0.5em 0;
+    display: block;
+  }
+  
+  .tiptap pre {
+    background: #f3f4f6;
+    color: #111827;
+    font-size: 0.95em;
+    border-radius: 6px;
+    padding: 0.75em 1em;
+    overflow-x: auto;
+    margin: 1em 0;
+  }
+  
+  .tiptap code {
+    background: #e5e7eb;
+    color: #be185d;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-size: 0.95em;
+  }
+  
+  /* Table styles for Tiptap */
+  .tiptap table {
+    border-collapse: collapse;
+    width: 100%;
+    margin: 1em 0;
+  }
+  .tiptap th,
+  .tiptap td {
+    border: 1px solid #d1d5db;
+    padding: 0.5em 0.75em;
+    min-width: 2em;
+    position: relative;
+    background: #fff;
+    /* If using color customization, background may be set inline */
+  }
+  .tiptap th[style],
+  .tiptap td[style] {
+    /* allow backgroundColor on styled th/td */
+  }
+  .tiptap th {
+    background: #f3f4f6;
+    font-weight: bold;
+    text-align: left;
+  }
+  .tiptap tr {
+    min-height: 2em;
+  }
+  .tiptap td:empty:before,
+  .tiptap th:empty:before {
+    content: "\00a0"; /* Ensures cell is clickable even if empty */
+  }
+  
+  /* Optional: Highlight selected cell (Tiptap applies .selectedCell) */
+  .tiptap .selectedCell {
+    outline: 2px solid #2563eb;
+    outline-offset: -2px;
+  }
+  
+  /* Table color palette buttons */
+  .tiptap-table-colors {
+    margin: 0.25em 0;
+  }
+  .tiptap-table-color-btn {
+    width: 24px;
+    height: 24px;
+    border: 1px solid #e5e7eb;
+    border-radius: 4px;
+    cursor: pointer;
+    outline: none;
+    margin-right: 4px;
+    margin-bottom: 2px;
+  }
+  
+  /* Text color input */
+  .tiptap-color-input {
+    width: 28px;
+    height: 28px;
+    border: none;
+    background: none;
+    cursor: pointer;
+    margin: 0 4px;
+    padding: 0;
+  }
+  
+  /* Placeholder styling (if using Tiptap Placeholder extension) */
+  .tiptap p.is-editor-empty:first-child::before {
+    content: attr(data-placeholder);
+    color: #a0aec0;
+    float: left;
+    pointer-events: none;
+    height: 0;
+  }
+  
+  /* Toolbar styles */
+  .tiptap-toolbar {
+    border: 1px solid #e5e7eb;
+    background: #f9fafb;
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 0.5em;
+    display: flex;
+    gap: 0.25em;
+    flex-wrap: wrap;
+  }
+  
+  .tiptap-btn,
+  .tiptap-btn-active {
+    border: none;
+    background: none;
+    padding: 4px 8px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    color: #374151;
+    transition: background 0.15s;
+  }
+  
+  .tiptap-btn:hover,
+  .tiptap-btn-active {
+    background: #e0e7ef;
+  }
+  
+  .tiptap-btn-active {
+    color: #2563eb;
+    background: #dbeafe;
+  }
+  
+  /* Image node view: delete button and resizing handle */
+  .tiptap-img {
+    display: inline-block;
+    vertical-align: middle;
+    border-radius: 4px;
+    max-width: 100%;
+    height: auto;
+    margin: 0.25em 0;
+  }
+  
+  .tiptap-img-resize {
+    position: absolute;
+    bottom: 0;
+    right: 0;
+    width: 14px;
+    height: 14px;
+    background: #93c5fd;
+    border-radius: 50%;
+    border: 2px solid #2563eb;
+    cursor: ew-resize;
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .tiptap-img-delete {
+    position: absolute;
+    top: -10px;
+    right: -10px;
+    background: #f87171;
+    color: #fff;
+    border: none;
+    border-radius: 50%;
+    width: 22px;
+    height: 22px;
+    font-size: 1.1em;
+    cursor: pointer;
+    z-index: 20;
+    box-shadow: 0 2px 6px rgba(0,0,0,0.11);
+  }
+  .tiptap-img-menu {
+    background: #f3f4f6;
+    border-radius: 6px;
+    padding: 4px 12px;
+    margin-bottom: 8px;
+  }
+  
+  .tiptap img[style*="float: left"] {
+    float: left;
+    margin-right: 1em;
+  }
+  .tiptap img[style*="float: right"] {
+    float: right;
+    margin-left: 1em;
+  }
+  .tiptap img {
+    margin-top: 0.5em;
+    margin-bottom: 0.5em;
+  }
