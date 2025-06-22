@@ -7,8 +7,8 @@ import Pagination from '../shared/pagination';
 
 interface MoreReportsProps {
   reports: ReportCardProps[];
-  activeSlug: string;
-  onSelect: (slug: string) => void;
+  activeId?: number;
+  onSelect: (id: number) => void;
 }
 
 const PAGE_SIZE = 3;
@@ -48,9 +48,11 @@ function formatDateWithSuperscript(dateString?: string): JSX.Element {
   );
 }
 
-export default function MoreReports({ reports, activeSlug, onSelect }: MoreReportsProps) {
+export default function MoreReports({ reports, activeId, onSelect }: MoreReportsProps) {
   // Exclude the active report
-  const filteredReports = reports.filter(r => r.slug !== activeSlug);
+  const filteredReports = activeId !== undefined
+    ? reports.filter(r => r.id !== activeId)
+    : reports;
   // Sort by updatedAt, then createdAt as fallback (desc, latest first)
   const sortedReports = [...filteredReports].sort(
     (a, b) =>
@@ -75,9 +77,9 @@ export default function MoreReports({ reports, activeSlug, onSelect }: MoreRepor
         )}
         {pagedReports.map((report) => (
           <button
-            key={report.slug}
+            key={report.id}
             className="w-full focus:outline-none"
-            onClick={() => onSelect(report.slug)}
+            onClick={() => onSelect(report.id)}
             type="button"
             tabIndex={0}
           >
@@ -107,13 +109,13 @@ export default function MoreReports({ reports, activeSlug, onSelect }: MoreRepor
       </div>
       {/* Pagination controls */}
       {pageCount > 1 && (
-              <Pagination
-                currentPage={page + 1}
-                totalPages={pageCount}
-                onPageChange={p => setPage(p - 1)}
-                className="mt-4"
-              />
-            )}
+        <Pagination
+          currentPage={page + 1}
+          totalPages={pageCount}
+          onPageChange={p => setPage(p - 1)}
+          className="mt-4"
+        />
+      )}
     </div>
   );
 }

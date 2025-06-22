@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import MoreReports from '@/components/resources/MoreReports';
 import { Download, FileText } from 'lucide-react';
+import MoreReports from './moreReports';
 
 export interface ReportCardProps {
+  id: number;
   title: string;
-  slug: string;
   files: string[];
   images: string[];
   accessCount: number;
@@ -24,20 +24,8 @@ interface ReportDetailsProps {
   reports: ReportCardProps[];
   selectedReport: ReportCardProps | null;
   onBack: () => void;
-  onSelect: (slug: string) => void;
+  onSelect: (id: number) => void;
 }
-
-const PdfIcon = () => (
-  <svg className="w-5 h-5 mr-2 text-red-600 dark:text-red-400" fill="currentColor" viewBox="0 0 20 20">
-    <path d="M6 2a2 2 0 0 0-2 2v12a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V6.828A2 2 0 0 0 15.414 6L12 2.586A2 2 0 0 0 10.828 2H6zm6 1.414V7a1 1 0 0 0 1 1h3.586A1 1 0 0 1 18 8.414V16a1 1 0 0 1-1 1H6a1 1 0 0 1-1-1V4a1 1 0 0 1 1-1h6z" />
-  </svg>
-);
-
-const DownloadIcon = () => (
-  <svg className="w-5 h-5 ml-2" fill="none" stroke="currentColor" strokeWidth={2} viewBox="0 0 24 24">
-    <path strokeLinecap="round" strokeLinejoin="round" d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
-  </svg>
-);
 
 function formatDateWithSuperscript(dateStr?: string): JSX.Element | string {
   if (!dateStr) return 'N/A';
@@ -82,11 +70,10 @@ export default function ReportDetails({
   const [localAccessCount, setLocalAccessCount] = useState<number | null>(null);
   const [localDownloadCount, setLocalDownloadCount] = useState<number | null>(null);
 
-  // Only set local counts, do not increment on mount
   useEffect(() => {
     setLocalAccessCount(selectedReport?.accessCount ?? null);
     setLocalDownloadCount(selectedReport?.downloadCount ?? null);
-  }, [selectedReport?.slug, selectedReport?.accessCount, selectedReport?.downloadCount]);
+  }, [selectedReport?.id, selectedReport?.accessCount, selectedReport?.downloadCount]);
 
   useEffect(() => {
     if (selectedReport?.files?.[0]) {
@@ -101,9 +88,9 @@ export default function ReportDetails({
   }, [selectedReport]);
 
   const handleDownload = () => {
-    if (selectedReport?.files?.[0]) {
+    if (selectedReport?.files?.[0] && selectedReport?.id != null) {
       // Increment download count in the backend and update local
-      fetch(`/api/reports/${selectedReport.slug}/increment-download`, {
+      fetch(`/api/reports/${selectedReport.id}/increment-download`, {
         method: 'POST'
       })
         .then(res => res.json())
@@ -130,13 +117,6 @@ export default function ReportDetails({
     ? [uploader.firstName, uploader.lastName].filter(Boolean).join(' ')
     : 'Unknown';
   const uploaderPhoto = uploader?.image || undefined;
-
-  //debug
-  console.log('Uploader debug:', {
-    uploader,
-    uploaderName,
-    uploaderPhoto
-  });
 
   return (
     <div className="mt-8 w-full flex flex-col items-center">
@@ -194,31 +174,27 @@ export default function ReportDetails({
           {/* Download Button moved here */}
           {selectedReport.files?.[0] && (
             <button
-            className={`
-              flex items-center mt-4 bg-[#9f004d] text-white rounded shadow transition
-              w-full
-              max-w-[${IMAGE_WIDTH}px]
-              min-w-[${IMAGE_WIDTH}px]
-              justify-center
-              py-2
-              hover:bg-gray-100 hover:text-[#9f004d]
-              dark:hover:bg-neutral-100 dark:hover:text-[#9f004d]
-              group
-            `}
-            onClick={handleDownload}
-          >
-          
-            <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
-              <FileText size={18} color="white" />
-            </span>
-            Download Report
-            {/* <Download
-              className="w-5 h-5 ml-2 transition-colors duration-200 group-hover:text-[#9f004d] text-white"
-              /> */}
+              className={`
+                flex items-center mt-4 bg-[#9f004d] text-white rounded shadow transition
+                w-full
+                max-w-[${IMAGE_WIDTH}px]
+                min-w-[${IMAGE_WIDTH}px]
+                justify-center
+                py-2
+                hover:bg-gray-100 hover:text-[#9f004d]
+                dark:hover:bg-neutral-100 dark:hover:text-[#9f004d]
+                group
+              `}
+              onClick={handleDownload}
+            >
+              <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+                <FileText size={18} color="white" />
+              </span>
+              Download Report
               <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
                 <Download size={18} color="white" />
               </span>
-          </button>
+            </button>
           )}
         </div>
         {/* Middle: Table */}
@@ -274,7 +250,7 @@ export default function ReportDetails({
         <div className="w-full lg:w-[340px] flex flex-col items-center lg:items-start">
           <MoreReports
             reports={reports}
-            activeSlug={selectedReport.slug}
+            activeId={selectedReport.id}
             onSelect={onSelect}
           />
         </div>

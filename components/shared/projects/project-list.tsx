@@ -3,15 +3,15 @@ import { Card } from "@/components/ui/card";
 import Image from "next/image";
 
 export interface ProjectCardProps {
+  id: number; // <-- Use id instead of slug
   title: string;
   status: string;
   images: string[];
-  slug: string;
 }
 
 interface ProjectListProps {
   projects?: ProjectCardProps[];
-  onProjectClick?: (slug: string) => void;
+  onProjectClick?: (id: number) => void;
 }
 
 export function ProjectList({ projects = [], onProjectClick }: ProjectListProps) {
@@ -19,8 +19,8 @@ export function ProjectList({ projects = [], onProjectClick }: ProjectListProps)
     <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
       {projects.map((project, index) => (
         <Card
-          key={index}
-          onClick={() => onProjectClick?.(project.slug)}
+          key={project.id}
+          onClick={() => onProjectClick?.(project.id)}
           className="overflow-hidden flex flex-col p-0 rounded-xl border-2 bg-background
             hover:shadow-lg cursor-pointer transition"
         >

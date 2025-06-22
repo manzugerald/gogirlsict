@@ -1,118 +1,177 @@
 generator client {
-  provider = "prisma-client-js"
-  output   = "../lib/generated/prisma"
-}
-
-datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
-}
-
-model Project {
-  id            Int           @id @default(autoincrement())
-  title         String
-  slug          String        @unique
-  content       Json
-  images        String[]
-  projectStatus Status
-  publishStatus PublishStatus @default(draft)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  createdById   String
-  updatedById   String?
-  approvedById  String?
-  approvedBy    User?         @relation("ProjectApprovedBy", fields: [approvedById], references: [id])
-  createdBy     User          @relation("ProjectCreatedBy", fields: [createdById], references: [id])
-  updatedBy     User?         @relation("ProjectUpdatedBy", fields: [updatedById], references: [id])
-  reports       Report[]
-}
-
-model HomePage {
-  id         Int      @id @default(autoincrement())
-  heroVideo  String
-  vision     String
-  mission    String
-  focus      String
-  coreValues String
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-}
-
-model Message {
-  id              Int           @id @default(autoincrement())
-  title           String
-  affiliated      String
-  name            String
-  message         String
-  nameImageUrl    String?
-  messageImageUrl String?
-  messageStatus   PublishStatus @default(draft)
-  createdAt       DateTime      @default(now())
-  updatedAt       DateTime      @updatedAt
-  createdById     String
-  updatedById     String?
-  approvedById    String?
-  approver        User?         @relation("MessageApprovedBy", fields: [approvedById], references: [id])
-  creator         User          @relation("MessageCreatedBy", fields: [createdById], references: [id])
-  updater         User?         @relation("MessageUpdatedBy", fields: [updatedById], references: [id])
-}
-
-model Report {
-  id            Int           @id @default(autoincrement())
-  title         String
-  slug          String        @unique
-  images        String[]
-  files         String[]
-  publishStatus PublishStatus @default(draft)
-  accessCount   Int @default(0)
-  downloadCount Int @default(0)
-  createdAt     DateTime      @default(now())
-  updatedAt     DateTime      @updatedAt
-  createdById   String
-  updatedById   String?
-  approvedById  String?
-  projectId     Int?
-  approvedBy    User?         @relation("ReportApprovedBy", fields: [approvedById], references: [id])
-  createdBy     User          @relation("ReportCreatedBy", fields: [createdById], references: [id])
-  project       Project?      @relation(fields: [projectId], references: [id])
-  updatedBy     User?         @relation("ReportUpdatedBy", fields: [updatedById], references: [id])
-}
-
-model User {
-  id               String    @id @default(cuid())
-  firstName        String
-  lastName         String
-  username         String    @unique
-  password         String
-  email            String?   @unique
-  image            String?
-  role             Role      @default(viewer)
-  createdAt        DateTime  @default(now())
-  updatedAt        DateTime  @updatedAt
-  approvedMessages Message[] @relation("MessageApprovedBy")
-  createdMessages  Message[] @relation("MessageCreatedBy")
-  updatedMessages  Message[] @relation("MessageUpdatedBy")
-  approvedProjects Project[] @relation("ProjectApprovedBy")
-  createdProjects  Project[] @relation("ProjectCreatedBy")
-  updatedProjects  Project[] @relation("ProjectUpdatedBy")
-  approvedReports  Report[]  @relation("ReportApprovedBy")
-  createdReports   Report[]  @relation("ReportCreatedBy")
-  updatedReports   Report[]  @relation("ReportUpdatedBy")
-}
-
-enum Status {
-  active
-  completed
-  paused
-}
-
-enum PublishStatus {
-  draft
-  published
-}
-
-enum Role {
-  viewer
-  contributor
-  admin
-}
+    provider = "prisma-client-js"
+    output   = "../lib/generated/prisma"
+  }
+  
+  datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+  }
+  
+  model Project {
+    id            Int           @id @default(autoincrement())
+    title         String
+    slug          String        @unique
+    content       Json
+    images        String[]
+    projectStatus Status
+    publishStatus PublishStatus @default(draft)
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+    createdById   String
+    updatedById   String?
+    approvedById  String?
+    approvedBy    User?         @relation("ProjectApprovedBy", fields: [approvedById], references: [id])
+    createdBy     User          @relation("ProjectCreatedBy", fields: [createdById], references: [id])
+    updatedBy     User?         @relation("ProjectUpdatedBy", fields: [updatedById], references: [id])
+    reports       Report[]
+    events        Event[]
+  }
+  
+  model HomePage {
+    id         Int      @id @default(autoincrement())
+    heroVideo  String
+    vision     String
+    mission    String
+    focus      String
+    coreValues String
+    createdAt  DateTime @default(now())
+    updatedAt  DateTime @updatedAt
+  }
+  
+  model Message {
+    id              Int           @id @default(autoincrement())
+    title           String
+    affiliated      String
+    name            String
+    message         String
+    nameImageUrl    String?
+    messageImageUrl String?
+    messageStatus   PublishStatus @default(draft)
+    createdAt       DateTime      @default(now())
+    updatedAt       DateTime      @updatedAt
+    createdById     String
+    updatedById     String?
+    approvedById    String?
+    approver        User?         @relation("MessageApprovedBy", fields: [approvedById], references: [id])
+    creator         User          @relation("MessageCreatedBy", fields: [createdById], references: [id])
+    updater         User?         @relation("MessageUpdatedBy", fields: [updatedById], references: [id])
+  }
+  
+  model Report {
+    id            Int           @id @default(autoincrement())
+    title         String
+    slug          String        @unique
+    images        String[]
+    files         String[]
+    publishStatus PublishStatus @default(draft)
+    accessCount   Int @default(0)
+    downloadCount Int @default(0)
+    createdAt     DateTime      @default(now())
+    updatedAt     DateTime      @updatedAt
+    createdById   String
+    updatedById   String?
+    approvedById  String?
+    projectId     Int?
+    approvedBy    User?         @relation("ReportApprovedBy", fields: [approvedById], references: [id])
+    createdBy     User          @relation("ReportCreatedBy", fields: [createdById], references: [id])
+    project       Project?      @relation(fields: [projectId], references: [id])
+    updatedBy     User?         @relation("ReportUpdatedBy", fields: [updatedById], references: [id])
+    events        Event[]
+  }
+  
+  model User {
+    id               String    @id @default(cuid())
+    firstName        String
+    lastName         String
+    username         String    @unique
+    password         String
+    email            String?   @unique
+    image            String?
+    role             Role      @default(viewer)
+    createdAt        DateTime  @default(now())
+    updatedAt        DateTime  @updatedAt
+    approvedMessages Message[] @relation("MessageApprovedBy")
+    createdMessages  Message[] @relation("MessageCreatedBy")
+    updatedMessages  Message[] @relation("MessageUpdatedBy")
+    approvedProjects Project[] @relation("ProjectApprovedBy")
+    createdProjects  Project[] @relation("ProjectCreatedBy")
+    updatedProjects  Project[] @relation("ProjectUpdatedBy")
+    approvedReports  Report[]  @relation("ReportApprovedBy")
+    createdReports   Report[]  @relation("ReportCreatedBy")
+    updatedReports   Report[]  @relation("ReportUpdatedBy")
+    createdEvents Event[]        @relation("EventCreatedBy")
+    updatedEvents Event[]        @relation("EventUpdatedBy")
+  }
+  
+  enum Status {
+    active
+    completed
+    paused
+  }
+  
+  enum PublishStatus {
+    draft
+    published
+  }
+  
+  enum Role {
+    viewer
+    contributor
+    admin
+  }
+  
+  
+  
+  
+  
+  model Event {
+    id              Int            @id @default(autoincrement())
+    slug            String         @unique
+    eventTitle      String
+    eventDescription Json
+    eventDetails    Json?
+    eventLocation   String?
+    eventBanner     String
+    eventImages     String[]
+    eventFile       String
+  
+    eventStartDate  DateTime
+    eventEndDate    DateTime
+  
+    eventTags       String[]
+    eventStatus     EventStatus    @default(pending)
+    publishStatus   PublishStatus  @default(draft)
+    eventAttendance AttendanceType @default(public)
+    maxAttendees    Int?
+  
+    accessCount     Int            @default(0)
+    downloadCount   Int            @default(0)
+  
+    createdAt       DateTime       @default(now())
+    updatedAt       DateTime       @updatedAt
+    deletedAt       DateTime?
+  
+    createdById     String
+    updatedById     String
+  
+    createdBy       User           @relation("EventCreatedBy", fields: [createdById], references: [id])
+    updatedBy       User           @relation("EventUpdatedBy", fields: [updatedById], references: [id])
+  
+    projectId       Int?
+    project         Project?       @relation(fields: [projectId], references: [id])
+  
+    reportId        Int?
+    report          Report?        @relation(fields: [reportId], references: [id])
+  }
+  
+  enum EventStatus {
+    pending
+    ongoing
+    completed
+    paused
+  }
+  enum AttendanceType {
+    public
+    registration_required
+  }

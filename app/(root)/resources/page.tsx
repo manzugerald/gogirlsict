@@ -3,14 +3,16 @@
 import { useEffect, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { Videos, Articles, Gallery, ReportList } from '@/components/resources';
-import ReportDetails, { ReportCardProps } from '@/components/resources/ReportDetails';
+import ReportDetails, { ReportCardProps } from '@/components/resources/reportDetails';
 import ProjectHero from '@/components/shared/header/project-header';
 
 const ResourcesPage = () => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const type = searchParams.get('type') || 'Videos';
-  const reportSlug = searchParams.get('report') || null;
+  // Now get reportId as string and parse to number if present
+  const reportIdParam = searchParams.get('report');
+  const reportId = reportIdParam ? Number(reportIdParam) : null;
 
   const [reports, setReports] = useState<ReportCardProps[]>([]);
   const [selectedReport, setSelectedReport] = useState<ReportCardProps | null>(null);
@@ -21,8 +23,8 @@ const ResourcesPage = () => {
         .then((res) => res.json())
         .then((data) => {
           const cleaned = data.map((report: any) => ({
+            id: report.id,
             title: report.title,
-            slug: report.slug,
             files: report.files || [],
             images: report.images || [],
             accessCount: report.accessCount ?? 0,
@@ -40,8 +42,8 @@ const ResourcesPage = () => {
           setReports(cleaned);
 
           // If a report is in the URL, select it (do not increment)
-          if (reportSlug) {
-            const found = cleaned.find((r: ReportCardProps) => r.slug === reportSlug);
+          if (reportId) {
+            const found = cleaned.find((r: ReportCardProps) => r.id === reportId);
             setSelectedReport(found || null);
           } else {
             setSelectedReport(null);
@@ -49,15 +51,15 @@ const ResourcesPage = () => {
         })
         .catch((err) => console.error("Failed to fetch reports:", err));
     }
-  }, [type, reportSlug]);
+  }, [type, reportId]);
 
   // When user selects a report (from list or more reports)
-  const handleReportSelect = async (slug: string) => {
-    const found = reports.find((r) => r.slug === slug);
+  const handleReportSelect = async (id: number) => {
+    const found = reports.find((r) => r.id === id);
     if (!found) return;
 
     // Increment access count on click only and get new value
-    const res = await fetch(`/api/reports/${slug}/increment-access`, { method: 'POST' });
+    const res = await fetch(`/api/reports/${id}/increment-access`, { method: 'POST' });
     const data = await res.json();
 
     // Update the selectedReport with the new accessCount
@@ -69,7 +71,7 @@ const ResourcesPage = () => {
     setSelectedReport(updatedReport);
 
     // Update the URL with the selected report (without reload)
-    router.push(`/resources?type=Reports&report=${slug}`);
+    router.push(`/resources?type=Reports&report=${id}`);
   };
 
   const handleBack = () => {
@@ -87,7 +89,7 @@ const ResourcesPage = () => {
         <ReportList
           reports={reports}
           onSelect={handleReportSelect}
-          // activeSlug={selectedReport?.slug}
+          activeId={selectedReport?.id ?? (reportId || undefined)}
           pageSize={8}
         />
       ) : (

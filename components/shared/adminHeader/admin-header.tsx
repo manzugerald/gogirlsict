@@ -8,6 +8,7 @@ import { useSession, signOut } from "next-auth/react";
 
 const AdminHeader = () => {
   const { data: session, status } = useSession();
+
   return (
     <header className="w-full flex items-center justify-between bg-[#9f004d] h-12">
       <div className="wrapper flex-between w-full">

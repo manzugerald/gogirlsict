@@ -2,62 +2,80 @@
 
 import { ColumnDef } from "@tanstack/react-table";
 import { Project } from "@/lib/generated/prisma";
-import Link from "next/link";
+import { Button } from '@/components/ui/button';
 
-export const projectColumns: ColumnDef<Project>[] = [
-  {
-    accessorKey: "title",
-    header: "Title",
-    cell: ({ row }) => (
-      <div className="whitespace-normal break-words max-w-xs">
-        {row.getValue("title")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "slug",
-    header: "Slug",
-    cell: ({ row }) => (
-      <div className="whitespace-normal break-words max-w-xs">
-        {row.getValue("slug")}
-      </div>
-    ),
-  },
-  {
-    accessorKey: "createdAt",
-    header: "Created At",
-    cell: ({ row }) => new Date(row.getValue("createdAt")).toLocaleDateString(),
-  },
-  {
-    accessorKey: "updatedAt",
-    header: "Updated At",
-    cell: ({ row }) => new Date(row.getValue("updatedAt")).toLocaleDateString(),
-  },
-  {
-    accessorKey: "createdBy",
-    header: "Created By",
-  },
-  {
-    accessorKey: "projectStatus",
-    header: "Status",
-  },
-  {
-    accessorKey: "publishStatus",
-    header: "Publish",
-  },
-  {
-    id: "actions",
-    header: "Actions",
-    cell: ({ row }) => {
-      const projectId = row.original.id;
-      return (
-        <Link
-          href={`/admin/projects/${projectId}/edit`}
-          className="text-blue-600 hover:underline"
-        >
-          Edit
-        </Link>
-      );
+type ProjectWithUser = Project & {
+  createdBy: {
+    firstName: string;
+    lastName: string;
+  };
+};
+
+// Accept props for custom handlers
+export function projectColumns({
+  onEdit,
+  onDelete,
+}: {
+  onEdit: (project: ProjectWithUser) => void;
+  onDelete: (id: number) => void;
+}): ColumnDef<ProjectWithUser>[] {
+  return [
+    {
+      accessorKey: 'title',
+      header: 'Title',
+      cell: ({ row }) => (
+        <div className="whitespace-normal break-words max-w-xs">{row.getValue('title')}</div>
+      ),
     },
-  },
-];
+    {
+      accessorKey: 'createdAt',
+      header: 'Created At',
+      cell: ({ row }) => new Date(row.getValue('createdAt')).toLocaleDateString(),
+    },
+    {
+      accessorKey: 'updatedAt',
+      header: 'Updated At',
+      cell: ({ row }) => new Date(row.getValue('updatedAt')).toLocaleDateString(),
+    },
+    {
+      id: 'createdBy',
+      header: 'Created By',
+      cell: ({ row }) => {
+        const createdBy = row.original.createdBy;
+        if (!createdBy) return '--';
+        return `${createdBy.firstName} ${createdBy.lastName}`;
+      },
+    },
+    {
+      accessorKey: 'projectStatus',
+      header: 'Status',
+    },
+    {
+      accessorKey: 'publishStatus',
+      header: 'Publish',
+    },
+    {
+      id: 'actions',
+      header: 'Actions',
+      cell: ({ row }) => (
+        <Button type="button" size="sm" variant="outline" onClick={() => onEdit(row.original)}>
+          Edit
+        </Button>
+      ),
+    },
+    {
+      id: 'delete',
+      header: 'Delete',
+      cell: ({ row }) => (
+        <Button
+          type="button"
+          size="sm"
+          variant="destructive"
+          onClick={() => onDelete(row.original.id)}
+        >
+          Delete
+        </Button>
+      ),
+    },
+  ];
+}

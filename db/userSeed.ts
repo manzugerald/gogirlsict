@@ -13,15 +13,18 @@ async function main() {
       username: 'testuser',
       email: 'test@example.com',
       password: hashedPassword,
+      image: "/assets/images/users/evayayi.jpg"
     },
   })
 }
 
 main()
-  .catch(e => {
-    console.error(e)
-    process.exit(1)
+  .then(() => {
+    console.log('✅ Seeding complete')
+    return prisma.$disconnect()
   })
-  .finally(async () => {
-    await prisma.$disconnect()
+  .catch((e) => {
+    console.error('❌ Seeding failed:', e)
+    return prisma.$disconnect()
   })
+

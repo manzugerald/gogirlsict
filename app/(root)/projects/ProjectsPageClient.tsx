@@ -1,21 +1,10 @@
-'use client';
-import { useState } from "react";
-import { ProjectList, ProjectCardProps } from "@/components/shared/projects/project-list";
+"use client";
+import { useRouter } from "next/navigation";
 import ProjectHero from "@/components/shared/header/project-header";
-import dynamic from "next/dynamic";
+import { ProjectList } from "@/components/shared/projects/project-list";
 
-const ProjectDetails = dynamic(() => import("@/components/shared/projects/project-details"), { ssr: false, loading: () => <div>Loading project...</div> });
-
-export default function ProjectsPageClient({ projects }: { projects: ProjectCardProps[] }) {
-  const [selectedProject, setSelectedProject] = useState<string | null>(null);
-
-  if (selectedProject) {
-    return (
-      <>
-        <ProjectDetails slug={selectedProject} onBack={() => setSelectedProject(null)} />
-      </>
-    );
-  }
+export default function ProjectsPageClient({ projects }) {
+  const router = useRouter();
 
   return (
     <>
@@ -23,7 +12,7 @@ export default function ProjectsPageClient({ projects }: { projects: ProjectCard
       <section className="wrapper">
         <ProjectList
           projects={projects}
-          onProjectClick={(slug) => setSelectedProject(slug)}
+          onProjectClick={(id) => router.push(`/projects/${id}`)}
         />
       </section>
     </>

@@ -267,15 +267,15 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
             H{level}
           </button>
         ))}
-        <button onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive("bold") ? "tiptap-btn-active" : "tiptap-btn"}><b>B</b></button>
-        <button onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive("italic") ? "tiptap-btn-active" : "tiptap-btn"}><i>I</i></button>
-        <button onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive("underline") ? "tiptap-btn-active" : "tiptap-btn"}><u>U</u></button>
-        <button onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive("bulletList") ? "tiptap-btn-active" : "tiptap-btn"}>• List</button>
-        <button onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive("orderedList") ? "tiptap-btn-active" : "tiptap-btn"}>1. List</button>
-        <button onClick={() => editor.chain().focus().toggleBlockquote().run()} className="tiptap-btn">❝ Quote</button>
-        <button onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="tiptap-btn">⌨ Code</button>
-        <button onClick={() => editor.chain().focus().setHorizontalRule().run()} className="tiptap-btn">― Rule</button>
-        <button type="button" onClick={() => editor.chain().focus().setHardBreak().run()} className="tiptap-btn">↵ New Line</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleBold().run()} className={editor.isActive("bold") ? "tiptap-btn-active" : "tiptap-btn"}><b>B</b></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleItalic().run()} className={editor.isActive("italic") ? "tiptap-btn-active" : "tiptap-btn"}><i>I</i></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleUnderline().run()} className={editor.isActive("underline") ? "tiptap-btn-active" : "tiptap-btn"}><u>U</u></button>
+        <button type="button" onClick={() => editor.chain().focus().toggleBulletList().run()} className={editor.isActive("bulletList") ? "tiptap-btn-active" : "tiptap-btn"}>• List</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleOrderedList().run()} className={editor.isActive("orderedList") ? "tiptap-btn-active" : "tiptap-btn"}>1. List</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleBlockquote().run()} className="tiptap-btn">❝ Quote</button>
+        <button type="button" onClick={() => editor.chain().focus().toggleCodeBlock().run()} className="tiptap-btn">⌨ Code</button>
+        <button type="button" onClick={() => editor.chain().focus().setHorizontalRule().run()} className="tiptap-btn">― Rule</button>
+        <button type="button" type="button" onClick={() => editor.chain().focus().setHardBreak().run()} className="tiptap-btn">↵ New Line</button>
         <input
           type="color"
           onChange={(e) => setTextColor(e.target.value)}
@@ -339,16 +339,16 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
             }}
           />
         </label>
-        <button onClick={() => setShowTablePrompt(true)} className="tiptap-btn">➕ Table</button>
-        <button onClick={() => editor.chain().focus().deleteTable().run()} className="tiptap-btn">❌ Table</button>
-        <button onClick={() => editor.chain().focus().addColumnBefore().run()} className="tiptap-btn">|◀️ Col</button>
-        <button onClick={() => editor.chain().focus().addColumnAfter().run()} className="tiptap-btn">Col ▶️|</button>
-        <button onClick={() => editor.chain().focus().deleteColumn().run()} className="tiptap-btn">⛔ Col</button>
-        <button onClick={() => editor.chain().focus().addRowBefore().run()} className="tiptap-btn">▲ Row</button>
-        <button onClick={() => editor.chain().focus().addRowAfter().run()} className="tiptap-btn">▼ Row</button>
-        <button onClick={() => editor.chain().focus().deleteRow().run()} className="tiptap-btn">⛔ Row</button>
-        <button onClick={() => editor.chain().focus().undo().run()} className="tiptap-btn">↶ Undo</button>
-        <button onClick={() => editor.chain().focus().redo().run()} className="tiptap-btn">↷ Redo</button>
+        <button type="button" onClick={() => setShowTablePrompt(true)} className="tiptap-btn">➕ Table</button>
+        <button type="button" onClick={() => editor.chain().focus().deleteTable().run()} className="tiptap-btn">❌ Table</button>
+        <button type="button" onClick={() => editor.chain().focus().addColumnBefore().run()} className="tiptap-btn">|◀️ Col</button>
+        <button type="button" onClick={() => editor.chain().focus().addColumnAfter().run()} className="tiptap-btn">Col ▶️|</button>
+        <button type="button" onClick={() => editor.chain().focus().deleteColumn().run()} className="tiptap-btn">⛔ Col</button>
+        <button type="button" onClick={() => editor.chain().focus().addRowBefore().run()} className="tiptap-btn">▲ Row</button>
+        <button type="button" onClick={() => editor.chain().focus().addRowAfter().run()} className="tiptap-btn">▼ Row</button>
+        <button type="button" onClick={() => editor.chain().focus().deleteRow().run()} className="tiptap-btn">⛔ Row</button>
+        <button type="button" onClick={() => editor.chain().focus().undo().run()} className="tiptap-btn">↶ Undo</button>
+        <button type="button" onClick={() => editor.chain().focus().redo().run()} className="tiptap-btn">↷ Redo</button>
       </div>
 
       {editor.isActive("table") && (
@@ -370,12 +370,12 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
       {selectedImagePos && (
         <div className="tiptap-img-menu flex flex-wrap gap-2 mb-2 items-center">
           <span className="text-xs">Image:</span>
-          <button className="tiptap-btn" onClick={() => setImageFloat("left")}>⬅️ Float Left</button>
-          <button className="tiptap-btn" onClick={() => setImageFloat("right")}>Float Right ➡️</button>
-          <button className="tiptap-btn" onClick={() => setImageFloat("none")}>No Float</button>
-          <button className="tiptap-btn" onClick={() => setImageWidth("100%")}>100% Width</button>
-          <button className="tiptap-btn" onClick={() => setImageWidth("50%")}>50% Width</button>
-          <button className="tiptap-btn" onClick={removeImage}>❌ Delete Image</button>
+          <button type="button" className="tiptap-btn" onClick={() => setImageFloat("left")}>⬅️ Float Left</button>
+          <button type="button" className="tiptap-btn" onClick={() => setImageFloat("right")}>Float Right ➡️</button>
+          <button type="button" className="tiptap-btn" onClick={() => setImageFloat("none")}>No Float</button>
+          <button type="button" className="tiptap-btn" onClick={() => setImageWidth("100%")}>100% Width</button>
+          <button type="button" className="tiptap-btn" onClick={() => setImageWidth("50%")}>50% Width</button>
+          <button type="button" className="tiptap-btn" onClick={removeImage}>❌ Delete Image</button>
         </div>
       )}
 
@@ -395,6 +395,7 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
           </div>
           <div className="flex gap-4">
             <button
+              type="button"
               className="tiptap-btn"
               onClick={() => {
                 editor
@@ -407,7 +408,7 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
             >
               ✅ Insert
             </button>
-            <button onClick={() => setShowTablePrompt(false)} className="tiptap-btn">Cancel</button>
+            <button type="button" onClick={() => setShowTablePrompt(false)} className="tiptap-btn">Cancel</button>
           </div>
         </div>
       )}

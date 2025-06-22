@@ -1,90 +1,398 @@
 "use client";
+import { useSession } from 'next-auth/react';
+import { useRouter } from 'next/navigation';
+import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
+import { Card } from '@/components/ui/card';
+import { DataTable } from '@/components/admin/data-table/data-table/data-table';
+import { projectColumns } from '@/components/admin/data-table/columns/projects';
+import { columns } from '@/components/admin/data-table/columns';
+import dynamic from 'next/dynamic';
+import { reportColumns } from '@/components/admin/data-table/columns/reports';
+import { userColumns } from '@/components/admin/data-table/columns/users';
+import { eventColumns } from '@/components/admin/data-table/columns/events';
+import DashboardChart from './chart/dashboardChart';
 
-import Link from "next/link"; // for navigation
-import { useState } from "react";
-import { Card } from "@/components/ui/card";
-import { DataTable } from "@/components/admin/data-table/data-table/data-table";
-import { columns } from "@/components/admin/data-table/columns"; // centralized columns
-
-const sections = ["Events", "projects", "reports", "system","Home Page", "admin"] as const;
+const sections = ['events', 'projects', 'reports', 'charts', 'Home Page', 'admin'] as const;
 type Section = (typeof sections)[number];
+const validKeys = ['projects', 'reports', 'admin', 'events'] as const;
 
-const validKeys = ["projects", "reports", "admin"] as const;
-type ValidKey = typeof validKeys[number];
+const rowsPerPageOptions = [5, 10, 25, 50];
+
+// Dynamic imports for create/edit forms per section (add yours as needed)
+const createFormMap: Record<string, any> = {
+  projects: dynamic(() => import('./createProjectForm'), { ssr: false }),
+  reports: dynamic(() => import('./createReportForm'), { ssr: false }),
+  admin: dynamic(() => import('./createUserForm'), { ssr: false }),
+  events: dynamic(() => import('./createEventForm'), { ssr: false }),
+  // Add more as needed for Events, system, Home Page, etc.
+};
 
 export default function AdminDashboardPage() {
+  const { status } = useSession();
+  const router = useRouter();
   const [activeSection, setActiveSection] = useState<Section | null>(null);
   const [data, setData] = useState<any[]>([]);
+  const [editRecord, setEditRecord] = useState<any | null>(null);
+  const [showCreateForm, setShowCreateForm] = useState<boolean>(false);
+  const [sortBy, setSortBy] = useState('createdAt');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [rowsPerPage, setRowsPerPage] = useState<number>(10);
+  const [page, setPage] = useState<number>(1);
+  const [search, setSearch] = useState('');
+  const sectionRef = useRef(activeSection);
 
-  const handleCardClick = async (section: Section) => {
-    setActiveSection(section);
-    switch (section) {
-      case "projects": {
-        const res = await fetch("/api/projects");
-        const projects = await res.json();
-        setData(projects);
-        break;
-      }
-      case "reports": {
-        const res = await fetch("/api/reports");
-        const reports = await res.json();
-        setData(reports);
-        break;
-      }
-      case "admin": {
-        const res = await fetch("/api/users");
-        const users = await res.json();
-        setData(users);
-        break;
-      }
-      default:
-        setData([]);
+  useEffect(() => {
+    if (status === 'unauthenticated') {
+      router.replace('/admin');
     }
+  }, [status, router]);
+
+  function handleEdit(record: any) {
+    setEditRecord(record);
+    setShowCreateForm(false);
+  }
+
+  async function handleDelete(
+    type: 'projects' | 'reports' | 'users' | 'events',
+    id: string | number
+  ) {
+    const typeLabel = type.slice(0, -1); // remove trailing 's' → for confirmation text
+    if (!confirm(`Are you sure you want to delete this ${typeLabel}?`)) return;
+
+    try {
+      const res = await fetch(`/api/${type}/${id}`, { method: 'DELETE' });
+
+      if (res.ok) {
+        setData((prev) => prev.filter((item) => item.id !== id));
+      } else {
+        const data = await res.json();
+        alert(data.error || `Failed to delete ${typeLabel}. Please try again`);
+      }
+    } catch (error) {
+      console.error(`Error deleting ${typeLabel}:`, error);
+      alert(`An error occurred while deleting the ${typeLabel}.`);
+    }
+  }
+
+  //Table
+  const sectionFeatures: Record<
+    string,
+    {
+      searchable?: boolean;
+      sortable?: boolean;
+      addNew?: boolean;
+      apiRoute?: string;
+      columns?: any;
+      getColumns?: (() => any) | null;
+      isChart?: boolean;
+    }
+  > = {
+    projects: {
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/projects',
+      columns: projectColumns,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...projectColumns({ onEdit: handleEdit, onDelete: (id) => handleDelete('projects', id) }),
+      ],
+    },
+    reports: {
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/reports',
+      columns: columns.reports,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...reportColumns({ onEdit: handleEdit, onDelete: (id) => handleDelete('reports', id) }),
+      ],
+    },
+    admin: {
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/users',
+      columns: columns.admin,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...userColumns({ onEdit: handleEdit, onDelete: (id) => handleDelete('users', id) }),
+      ],
+    },
+    events: {
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/events',
+      columns: columns.events,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...eventColumns({
+          onEdit: handleEdit,
+          onDelete: (id) => handleDelete('events', id),
+        }),
+      ],
+    },
+    charts: {
+      isChart: true,
+    },
+    'Home Page': {
+      searchable: false,
+      sortable: false,
+      addNew: false,
+      apiRoute: '/api/homepage',
+      columns: columns.admin,
+      getColumns: null,
+    },
   };
 
-  // Determine "Add New" link based on active section
-  const getAddNewLink = (section: Section | null) => {
-    if (section === "projects") return "/admin/new-project";
-    if (section === "reports") return "/admin/new-report";
-    if (section === "admin") return "/admin/new-user";
-    return null;
+  // ---- EVENT HANDLERS ----
+  async function handleCardClick(section: Section) {
+    setActiveSection(section);
+    setEditRecord(null);
+    setShowCreateForm(false);
+    setPage(1);
+    sectionRef.current = section;
+    // fetch data dynamically
+    const feat = sectionFeatures[section];
+    if (feat?.apiRoute) {
+      const res = await fetch(feat.apiRoute);
+      const dat = await res.json();
+      setData(dat); // <-- sets all user data for the admin section
+    } else {
+      setData([]);
+    }
+  }
+
+  // ---- TABLE LOGIC ----
+  const sortedData = useMemo(() => {
+    if (!activeSection || !sectionFeatures[activeSection]?.sortable) return data;
+    let sorted = [...data];
+    sorted.sort((a, b) => {
+      let valA = a[sortBy];
+      let valB = b[sortBy];
+      if (sortBy === 'createdAt' || sortBy === 'updatedAt') {
+        valA = new Date(valA).getTime();
+        valB = new Date(valB).getTime();
+      }
+      if (valA < valB) return sortOrder === 'asc' ? -1 : 1;
+      if (valA > valB) return sortOrder === 'asc' ? 1 : -1;
+      return 0;
+    });
+    return sorted;
+  }, [data, sortBy, sortOrder, activeSection]);
+
+  const filteredData = useMemo(() => {
+    if (!activeSection || !sectionFeatures[activeSection]?.searchable || !search.trim())
+      return sortedData;
+    const lower = search.toLowerCase();
+    return sortedData.filter((item) =>
+      Object.keys(item).some(
+        (key) => typeof item[key] === 'string' && item[key].toLowerCase().includes(lower)
+      )
+    );
+  }, [sortedData, search, activeSection]);
+
+  const pageCount = Math.ceil(filteredData.length / rowsPerPage);
+  const paginatedData = useMemo(
+    () => filteredData.slice((page - 1) * rowsPerPage, page * rowsPerPage),
+    [filteredData, page, rowsPerPage]
+  );
+
+  // ---- DYNAMIC FORM COMPONENT ----
+  const getCreateFormComponent = () => {
+    if (!activeSection || !createFormMap[activeSection]) return null;
+    const FormComponent = createFormMap[activeSection];
+    return (
+      <Suspense fallback={<div>Loading form...</div>}>
+        <FormComponent
+          mode={editRecord ? 'edit' : 'create'}
+          userId={editRecord?.id}
+          initialData={editRecord || undefined}
+          onSuccess={() => {
+            setShowCreateForm(false);
+            setEditRecord(null);
+            handleCardClick(activeSection);
+          }}
+          onCancel={() => {
+            setShowCreateForm(false);
+            setEditRecord(null);
+          }}
+        />
+      </Suspense>
+    );
   };
+
+  // ---- RENDER ----
+  if (status === 'loading') {
+    return <div>Checking session ...</div>;
+  }
 
   return (
     <div className="p-6">
-      <div className="grid md:grid-cols-3 gap-4">
+      <div className="grid md:grid-cols-6 gap-4">
         {sections.map((section) => (
           <Card
             key={section}
             onClick={() => handleCardClick(section)}
-            className="cursor-pointer p-6 hover:shadow-xl transition"
+            className={`
+              cursor-pointer 
+              p-4
+              h-12
+              flex items-center justify-center text-center
+              rounded-sm  
+              transition 
+              ${
+                activeSection === section
+                  ? 'bg-[#9f004d] text-white shadow-2xl border-2 border-[#9f004d] scale-105'
+                  : 'text-gray-400 opacity-70 grayscale hover:opacity-100 hover:grayscale-0'
+              }`}
           >
             {section.toUpperCase()}
           </Card>
         ))}
       </div>
 
-      {activeSection && validKeys.includes(activeSection as ValidKey) && (
+      {activeSection && (
         <>
-          {/* Add New Button */}
-          {getAddNewLink(activeSection) && (
-            <div className="mt-6">
-              <Link
-                href={getAddNewLink(activeSection)!}
-                className="inline-block rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
-              >
-                Add New {activeSection === "projects"? "Project"
-                  : activeSection === "reports" ? "Report"
-                  : activeSection === "admin" ? "User"
-                : ""}
-              </Link>
+          {/* Controls Row: Show only if NOT adding or editing snf noy vhstyd */}
+          {!showCreateForm && !editRecord && !sectionFeatures[activeSection]?.isChart && (
+            <div className="flex items-center justify-between mt-8">
+              <div className="flex gap-4 items-center">
+                {sectionFeatures[activeSection]?.searchable && (
+                  <input
+                    type="text"
+                    value={search}
+                    onChange={(e) => {
+                      setSearch(e.target.value);
+                      setPage(1);
+                    }}
+                    placeholder="Search..."
+                    className="rounded border px-2 py-1"
+                    style={{ minWidth: 120 }}
+                  />
+                )}
+                {sectionFeatures[activeSection]?.sortable && (
+                  <div>
+                    <label className="mr-2 font-semibold">Sort by:</label>
+                    <select
+                      className="rounded border px-2 py-1"
+                      value={sortBy}
+                      onChange={(e) => setSortBy(e.target.value)}
+                    >
+                      <option value="createdAt">Date</option>
+                      <option value="title">Title</option>
+                    </select>
+                    <button
+                      className="ml-2 px-2 rounded border"
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                )}
+                <div>
+                  <label className="mr-2 font-semibold">Rows per page:</label>
+                  <select
+                    className="rounded border px-2 py-1"
+                    value={rowsPerPage}
+                    onChange={(e) => {
+                      setRowsPerPage(Number(e.target.value));
+                      setPage(1);
+                    }}
+                  >
+                    {rowsPerPageOptions.map((opt) => (
+                      <option key={opt} value={opt}>
+                        {opt}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+              {sectionFeatures[activeSection]?.addNew && (
+                <button
+                  onClick={() => {
+                    setShowCreateForm(true);
+                    setEditRecord(null);
+                  }}
+                  className="inline-block rounded bg-blue-600 px-4 py-2 text-white hover:bg-blue-700"
+                >
+                  Add New{' '}
+                  {activeSection
+                    .replace(/^\w/, (c) => c.toUpperCase())
+                    .replace(/_/g, ' ')
+                    .slice(0, -1)}
+                </button>
+              )}
             </div>
           )}
 
-          {/* Data Table */}
-          <div className="mt-10">
-            <DataTable columns={columns[activeSection as ValidKey]} data={data} />
-          </div>
+          {/* Create/Edit Form */}
+          {(showCreateForm || editRecord) && (
+            <div className="mt-10">{getCreateFormComponent()}</div>
+          )}
+
+          {/* Data Table  or charts */}
+          {!showCreateForm && !editRecord && (
+            <div className="mt-6">
+              {sectionFeatures[activeSection]?.isChart ? (
+                <DashboardChart />
+              ) : (
+                <DataTable
+                  columns={
+                    sectionFeatures[activeSection]?.getColumns
+                      ? sectionFeatures[activeSection]?.getColumns!()
+                      : sectionFeatures[activeSection]?.columns
+                  }
+                  data={paginatedData}
+                />
+              )}
+            </div>
+          )}
+
+          {/* Pagination Controls */}
+          {pageCount > 1 && !showCreateForm && !editRecord && (
+            <div className="flex gap-2 mt-4 justify-end items-center">
+              <button
+                className="px-2 py-1 rounded border"
+                disabled={page === 1}
+                onClick={() => setPage(page - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {page} of {pageCount}
+              </span>
+              <button
+                className="px-2 py-1 rounded border"
+                disabled={page === pageCount}
+                onClick={() => setPage(page + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
         </>
       )}
     </div>

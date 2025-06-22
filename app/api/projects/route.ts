@@ -15,7 +15,7 @@ export async function GET() {
         reports: true, // include related reports if you want full data
       },
     });
-
+    console.log("Projects:", projects.map(p => p.id));
     return NextResponse.json(projects);
   } catch (err) {
     console.error("Error fetching projects:", err);
@@ -54,7 +54,7 @@ export async function POST(req: Request) {
         updatedById: userId,
       },
     });
-
+    
     return NextResponse.json(project);
   } catch (error) {
     console.error("Failed to create project:", error);

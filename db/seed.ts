@@ -28,7 +28,7 @@ async function main() {
     data: {
       title: 'Community Outreach',
       slug: slugify('Community Outreach'),
-      content: 'Details about community outreach.',
+      content: ["Details about community outreach."],
       images: ['/assets/images/project/p1.jpg'],
       projectStatus: 'active',
       publishStatus: 'published',
