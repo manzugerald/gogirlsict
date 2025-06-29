@@ -12,6 +12,8 @@ import {
   Tooltip,
   Legend,
   ArcElement,
+  ChartOptions,
+  Plugin,
 } from 'chart.js';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
@@ -44,15 +46,13 @@ export default function FilesStatsCharts() {
   });
 
   useEffect(() => {
-    setLoading(true);
     fetch('/api/file-stats')
-      .then((r) => r.json())
-      .then((res) => {
-        setCounts(res.counts);
-        setSizes(res.sizes);
+      .then((res) => res.json())
+      .then((data) => {
+        setCounts(data.counts);
+        setSizes(data.sizes);
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+      });
   }, []);
 
   const barLabels = [
@@ -63,16 +63,111 @@ export default function FilesStatsCharts() {
     'Report Images',
     'Report PDFs',
   ];
-  const barColors = [
-    '#7c3aed',
-    '#a78bfa', // projects: images, pdfs
-    '#059669',
-    '#34d399', // events: images, pdfs
-    '#f59e42',
-    '#fdba74', // reports: images, pdfs
-  ];
 
-  // Bar chart for counts
+  const barColors = ['#7c3aed', '#a78bfa', '#059669', '#34d399', '#f59e42', '#fdba74'];
+
+  const chartBackgroundPlugin = {
+    id: 'chartBackgroundPlugin',
+    beforeDraw: (chart: any) => {
+      const { ctx, chartArea } = chart;
+
+      // Background
+      ctx.save();
+      ctx.fillStyle = '#f3f4f6'; // light gray
+      ctx.fillRect(
+        chartArea.left,
+        chartArea.top,
+        chartArea.right - chartArea.left,
+        chartArea.bottom - chartArea.top
+      );
+
+      // Border
+      ctx.strokeStyle = '#fff'; // outline color
+      ctx.lineWidth = 2;
+      ctx.strokeRect(
+        chartArea.left,
+        chartArea.top,
+        chartArea.right - chartArea.left,
+        chartArea.bottom - chartArea.top
+      );
+      ctx.restore();
+    },
+  };
+
+  const piePercentPlugin: Plugin<'pie'> = {
+    id: 'piePercentPlugin',
+    afterDraw(chart) {
+      const ctx = chart.ctx;
+      const dataset = chart.data.datasets[0];
+      const total = dataset.data.reduce((sum: number, val: any) => sum + val, 0);
+      dataset.data.forEach((value: any, index: number) => {
+        const meta = chart.getDatasetMeta(0);
+        const arc = meta.data[index];
+        const angle = (arc.startAngle + arc.endAngle) / 2;
+        const radius = (arc.outerRadius + arc.innerRadius) / 2;
+        const x = arc.x + Math.cos(angle) * radius;
+        const y = arc.y + Math.sin(angle) * radius;
+        const percent = ((value / total) * 100).toFixed(1) + '%';
+        ctx.fillStyle = '#fff';
+        ctx.font = 'bold 14px Arial';
+        ctx.textAlign = 'center';
+        ctx.fillText(percent, x, y);
+      });
+    },
+  };
+
+  const pieImagesData = {
+    labels: pieModuleLabels,
+    datasets: [
+      {
+        label: 'Images Count',
+        data: [counts['Project Images'], counts['Event Images'], counts['Report Images']],
+        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
+      },
+    ],
+  };
+
+  const piePdfsData = {
+    labels: pieModuleLabels,
+    datasets: [
+      {
+        label: 'PDFs Count',
+        data: [counts['Project PDFs'], counts['Event PDFs'], counts['Report PDFs']],
+        backgroundColor: ['#a78bfa', '#34d399', '#fdba74'],
+      },
+    ],
+  };
+
+  const pieImagesSizeData = {
+    labels: pieModuleLabels,
+    datasets: [
+      {
+        label: 'Images Size (MB)',
+        data: [
+          +(sizes['Project Images'] / 1048576).toFixed(2),
+          +(sizes['Event Images'] / 1048576).toFixed(2),
+          +(sizes['Report Images'] / 1048576).toFixed(2),
+        ],
+        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
+      },
+    ],
+  };
+
+  const piePdfsSizeData = {
+    labels: pieModuleLabels,
+    datasets: [
+      {
+        label: 'PDFs Size (MB)',
+        data: [
+          +(sizes['Project PDFs'] / 1048576).toFixed(2),
+          +(sizes['Event PDFs'] / 1048576).toFixed(2),
+          +(sizes['Report PDFs'] / 1048576).toFixed(2),
+        ],
+        backgroundColor: ['#a78bfa', '#34d399', '#fdba74'],
+      },
+    ],
+  };
+
   const barDataCounts = {
     labels: barLabels,
     datasets: [
@@ -91,164 +186,188 @@ export default function FilesStatsCharts() {
     ],
   };
 
-  // Pie for images (all modules)
-  const pieImagesData = {
-    labels: pieModuleLabels,
-    datasets: [
-      {
-        label: 'Images Count',
-        data: [counts['Project Images'], counts['Event Images'], counts['Report Images']],
-        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
-      },
-    ],
-  };
-  // Pie for pdfs (all modules)
-  const piePdfsData = {
-    labels: pieModuleLabels,
-    datasets: [
-      {
-        label: 'PDFs Count',
-        data: [counts['Project PDFs'], counts['Event PDFs'], counts['Report PDFs']],
-        backgroundColor: ['#a78bfa', '#34d399', '#fdba74'],
-      },
-    ],
-  };
-
-  // --- For sizes ---
   const barDataSizes = {
     labels: barLabels,
     datasets: [
       {
         label: 'Size (MB)',
         data: [
-          +(sizes['Project Images'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Project PDFs'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Event Images'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Event PDFs'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Report Images'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Report PDFs'] / (1024 * 1024)).toFixed(2),
+          +(sizes['Project Images'] / 1048576).toFixed(2),
+          +(sizes['Project PDFs'] / 1048576).toFixed(2),
+          +(sizes['Event Images'] / 1048576).toFixed(2),
+          +(sizes['Event PDFs'] / 1048576).toFixed(2),
+          +(sizes['Report Images'] / 1048576).toFixed(2),
+          +(sizes['Report PDFs'] / 1048576).toFixed(2),
         ],
         backgroundColor: barColors,
       },
     ],
   };
 
-  const pieImagesSizeData = {
-    labels: pieModuleLabels,
-    datasets: [
-      {
-        label: 'Images Size (MB)',
-        data: [
-          +(sizes['Project Images'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Event Images'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Report Images'] / (1024 * 1024)).toFixed(2),
-        ],
-        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
-      },
-    ],
-  };
-
-  const piePdfsSizeData = {
-    labels: pieModuleLabels,
-    datasets: [
-      {
-        label: 'PDFs Size (MB)',
-        data: [
-          +(sizes['Project PDFs'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Event PDFs'] / (1024 * 1024)).toFixed(2),
-          +(sizes['Report PDFs'] / (1024 * 1024)).toFixed(2),
-        ],
-        backgroundColor: ['#a78bfa', '#34d399', '#fdba74'],
-      },
-    ],
-  };
-
-  const barOptions = {
+  const barOptions: ChartOptions<'bar'> = {
     responsive: true,
     plugins: {
       legend: { display: false },
-      title: { display: false },
-      tooltip: { enabled: true },
     },
     scales: {
+      x: {
+        ticks: {
+          // color: 'var(--foreground)',
+          font: { size: 16, weight: 'bold' },
+        },
+      },
       y: {
         beginAtZero: true,
-        ticks: { precision: 0 },
+        ticks: {
+          // color: 'var(--foreground)',
+          font: { size: 16, weight: 'bold' },
+          precision: 0,
+        },
       },
     },
   };
 
-  // Reduce pie chart size using maintainAspectRatio and setting height/width
-  const pieOptions = {
+  const pieOptions: ChartOptions<'pie'> = {
     responsive: true,
-    maintainAspectRatio: false,
     plugins: {
-      legend: { position: 'right' as const },
+      legend: { display: false },
       tooltip: { enabled: true },
-      title: { display: false },
     },
   };
 
+  const PieLegend = ({ labels, data, colors }: any) => {
+    const total = data.reduce((a: number, b: number) => a + b, 0);
+    return (
+      <ul className="text-sm">
+        {labels.map((label: string, i: number) => (
+          <li key={i} className="flex items-center gap-2">
+            <span className="block w-4 h-4 rounded" style={{ backgroundColor: colors[i] }}></span>
+            {label} ({data[i]}) - {total ? ((data[i] / total) * 100).toFixed(1) : 0}%
+          </li>
+        ))}
+      </ul>
+    );
+  };
+
   return (
-    <Card>
-      <CardHeader className="font-bold text-lg">File Statistics</CardHeader>
-      <CardContent>
-        {loading ? (
-          <div className="py-8 text-center text-muted-foreground">Loading...</div>
-        ) : (
-          <div className="flex flex-col gap-12">
-            {/* File count bar and pies */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center w-full">
-              <div className="w-full md:w-1/2 h-72 flex flex-col items-center">
-                <div className="mb-2 font-semibold">Number of Images and PDFs</div>
-                <Bar data={barDataCounts} options={barOptions} />
-              </div>
-              <div className="w-full md:w-1/2 flex flex-row justify-center items-center gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 font-semibold">Image Count Distribution</div>
-                  <div style={{ width: 170, height: 170 }}>
-                    <Pie data={pieImagesData} options={pieOptions} />
+    <div className="flex justify-center">
+      {/* File Size overview charts */}
+      <Card className="w-full max-w-6xl">
+        <CardHeader className="font-bold text-lg text-center">File Statistics</CardHeader>
+        <CardContent>
+          {loading ? (
+            <div className="py-8 text-center text-muted-foreground">Loading...</div>
+          ) : (
+            <div className="flex flex-col gap-12">
+              {/* --- Count Charts --- */}
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Bar chart */}
+                <div className="w-full md:w-2/3 h-[350px]">
+                  <div className="font-semibold mb-2">Image & PDF Count</div>
+                  <Bar
+                    data={barDataCounts}
+                    options={barOptions}
+                    plugins={[chartBackgroundPlugin]}
+                  />
+                </div>
+
+                {/* Pie charts */}
+                <div className="w-full md:w-1/3 flex flex-col gap-6">
+                  <div>
+                    <div className="font-semibold text-center mb-2">Images File Stats</div>
+                    <div className="flex justify-center gap-4 items-center">
+                      <div className="w-40 h-40">
+                        <Pie
+                          data={pieImagesData}
+                          options={pieOptions}
+                          plugins={[piePercentPlugin]}
+                        />
+                      </div>
+                      <PieLegend
+                        labels={pieImagesData.labels}
+                        data={pieImagesData.datasets[0].data}
+                        colors={pieImagesData.datasets[0].backgroundColor}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-center mb-2">PDF File Stats</div>
+                    <div className="flex justify-center gap-4 items-center">
+                      <div className="w-40 h-40">
+                        <Pie data={piePdfsData} options={pieOptions} plugins={[piePercentPlugin]} />
+                      </div>
+                      <PieLegend
+                        labels={piePdfsData.labels}
+                        data={piePdfsData.datasets[0].data}
+                        colors={piePdfsData.datasets[0].backgroundColor}
+                      />
+                    </div>
                   </div>
                 </div>
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 font-semibold">PDF Count Distribution</div>
-                  <div style={{ width: 170, height: 170 }}>
-                    <Pie data={piePdfsData} options={pieOptions} />
+              </div>
+
+              {/* --- Size Charts --- */}
+              <div className="flex flex-col md:flex-row gap-6">
+                {/* Bar chart */}
+                <div className="w-full md:w-2/3 h-[350px]">
+                  <div className="font-semibold mb-2 text-center">Image & PDF Sizes (MB)</div>
+                    <Bar
+                      data={barDataSizes} options={barOptions} plugins={[chartBackgroundPlugin]}
+                    />
+                  <div className="text-sm mt-2">
+                    Total Images Size:{' '}
+                    {formatSize(
+                      sizes['Project Images'] + sizes['Event Images'] + sizes['Report Images']
+                    )}
+                    , Total PDFs Size:{' '}
+                    {formatSize(sizes['Project PDFs'] + sizes['Event PDFs'] + sizes['Report PDFs'])}
+                  </div>
+                </div>
+
+                {/* Pie charts */}
+                <div className="w-full md:w-1/3 flex flex-col gap-6">
+                  <div>
+                    <div className="font-semibold text-center mb-2">Images Size Stats</div>
+                    <div className="flex justify-center gap-4 items-center">
+                      <div className="w-40 h-40">
+                        <Pie
+                          data={pieImagesSizeData}
+                          options={pieOptions}
+                          plugins={[piePercentPlugin]}
+                        />
+                      </div>
+                      <PieLegend
+                        labels={pieImagesSizeData.labels}
+                        data={pieImagesSizeData.datasets[0].data}
+                        colors={pieImagesSizeData.datasets[0].backgroundColor}
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <div className="font-semibold text-center mb-2">PDF Size Stats</div>
+                    <div className="flex justify-center gap-4 items-center">
+                      <div className="w-40 h-40">
+                        <Pie
+                          data={piePdfsSizeData}
+                          options={pieOptions}
+                          plugins={[piePercentPlugin]}
+                        />
+                      </div>
+                      <PieLegend
+                        labels={piePdfsSizeData.labels}
+                        data={piePdfsSizeData.datasets[0].data}
+                        colors={piePdfsSizeData.datasets[0].backgroundColor}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-            {/* File size bar and pies */}
-            <div className="flex flex-col md:flex-row gap-4 justify-between items-center w-full">
-              <div className="w-full md:w-1/2 h-72 flex flex-col items-center">
-                <div className="mb-2 font-semibold">Total Size of Images and PDFs (MB)</div>
-                <Bar data={barDataSizes} options={barOptions} />
-                <div className="text-xs mt-2">
-                  {`Total Images Size: ${formatSize(
-                    sizes['Project Images'] + sizes['Event Images'] + sizes['Report Images']
-                  )}, Total PDFs Size: ${formatSize(
-                    sizes['Project PDFs'] + sizes['Event PDFs'] + sizes['Report PDFs']
-                  )}`}
-                </div>
-              </div>
-              <div className="w-full md:w-1/2 flex flex-row justify-center items-center gap-4">
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 font-semibold">Image Size Distribution (MB)</div>
-                  <div style={{ width: 170, height: 170 }}>
-                    <Pie data={pieImagesSizeData} options={pieOptions} />
-                  </div>
-                </div>
-                <div className="flex flex-col items-center">
-                  <div className="mb-2 font-semibold">PDF Size Distribution (MB)</div>
-                  <div style={{ width: 170, height: 170 }}>
-                    <Pie data={piePdfsSizeData} options={pieOptions} />
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        )}
-      </CardContent>
-    </Card>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }

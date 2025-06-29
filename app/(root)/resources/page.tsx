@@ -5,6 +5,7 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { Videos, Articles, Gallery, ReportList } from '@/components/resources';
 import ReportDetails, { ReportCardProps } from '@/components/resources/reportDetails';
 import ProjectHero from '@/components/shared/header/project-header';
+import VideoResources from './videos/videoResources';
 
 const ResourcesPage = () => {
   const searchParams = useSearchParams();
@@ -117,6 +118,7 @@ const ResourcesPage = () => {
   return (
     <>
       <ProjectHero />
+      <VideoResources />
       <main className="p-6 wrapper">
         <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12">
           {(['Reports', 'Articles', 'Videos'].includes(type)) && !selectedReport && (

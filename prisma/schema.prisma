@@ -175,3 +175,21 @@ generator client {
     public
     registration_required
   }
+
+  //YouTube Videos
+  model Video {
+  id            String   @id           // YouTube video ID
+  title         String
+  description   String
+  thumbnail     String
+  publishedAt   DateTime
+  viewCount     Int?
+  likeCount     Int?
+  duration      String
+  fetchedAt     DateTime @default(now()) // When this video was last fetched from YouTube
+}
+
+model YouTubeCacheMeta {
+  id          Int      @id @default(1)
+  lastFetched DateTime
+}

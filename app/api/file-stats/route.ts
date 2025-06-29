@@ -1,34 +1,37 @@
 import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
+import { prisma } from '@/db/prisma';
 
-// Helper to get file size by filename (search by file end, case-insensitive)
-function getFileSizeByName(dir: string, filename: string): number {
+// Strict match: only check if exact filename exists in the target folder
+function getExactFileSize(dir: string, filename: string): number {
   if (!fs.existsSync(dir)) return 0;
-  const files = fs.readdirSync(dir);
-  const found = files.find((f) => f.toLowerCase().endsWith(filename.toLowerCase()));
-  if (!found) return 0;
-  const stat = fs.statSync(path.join(dir, found));
+  const fullPath = path.join(dir, filename);
+  if (!fs.existsSync(fullPath)) return 0;
+
+  const stat = fs.statSync(fullPath);
   return stat.size;
 }
 
-export async function GET() {
-  // TODO: Replace these with real DB fetches!
-  const projects = [{ images: ['proj1.jpg', 'proj2.png'] }];
-  const reports = [{ images: ['repimg1.png'], files: ['report1.pdf', 'report2.pdf'] }];
-  const events = [
-    { eventBanner: 'eventbanner.jpg', eventImages: ['ev1.jpg'], eventFile: 'evdoc.pdf' },
-  ];
+function getFilenameFromPath(filepath: string): string {
+  return filepath?.split('/').pop() ?? '';
+}
 
-  // --- Projects ---
-  let projectImageCount = 0,
-    projectImageSize = 0;
-  for (const p of projects) {
-    if (Array.isArray(p.images)) {
-      projectImageCount += p.images.length;
-      for (const img of p.images) {
-        const filename = img.split('/').pop() ?? img;
-        const size = getFileSizeByName(
+export async function GET() {
+  const projects = await prisma.project.findMany();
+  const reports = await prisma.report.findMany();
+  const events = await prisma.event.findMany();
+
+  // --- PROJECTS ---
+  let projectImageCount = 0;
+  let projectImageSize = 0;
+
+  for (const project of projects) {
+    if (Array.isArray(project.images)) {
+      projectImageCount += project.images.length;
+      for (const img of project.images) {
+        const filename = getFilenameFromPath(img);
+        const size = getExactFileSize(
           path.join(process.cwd(), 'public/assets/images/projects'),
           filename
         );
@@ -37,61 +40,66 @@ export async function GET() {
     }
   }
 
-  // --- Events ---
-  let eventImageCount = 0,
-    eventImageSize = 0,
-    eventPDFCount = 0,
-    eventPDFSize = 0;
-  for (const e of events) {
-    if (e.eventBanner && typeof e.eventBanner === 'string' && e.eventBanner.trim().length > 0) {
+  // --- EVENTS ---
+  let eventImageCount = 0;
+  let eventImageSize = 0;
+  let eventPDFCount = 0;
+  let eventPDFSize = 0;
+
+  for (const event of events) {
+    if (event.eventBanner && typeof event.eventBanner === 'string') {
       eventImageCount += 1;
-      const filename = e.eventBanner.split('/').pop() ?? e.eventBanner;
-      eventImageSize += getFileSizeByName(
-        path.join(process.cwd(), 'public/assets/images/events'),
+      const filename = getFilenameFromPath(event.eventBanner);
+      eventImageSize += getExactFileSize(
+        path.join(process.cwd(), 'public/assets/images/events/first-event'),
         filename
       );
     }
-    if (Array.isArray(e.eventImages)) {
-      eventImageCount += e.eventImages.length;
-      for (const img of e.eventImages) {
-        const filename = img.split('/').pop() ?? img;
-        eventImageSize += getFileSizeByName(
-          path.join(process.cwd(), 'public/assets/images/events'),
+
+    if (Array.isArray(event.eventImages)) {
+      eventImageCount += event.eventImages.length;
+      for (const img of event.eventImages) {
+        const filename = getFilenameFromPath(img);
+        eventImageSize += getExactFileSize(
+          path.join(process.cwd(), 'public/assets/images/events/first-event'),
           filename
         );
       }
     }
-    if (e.eventFile && typeof e.eventFile === 'string' && e.eventFile.trim().length > 0) {
+
+    if (event.eventFile && typeof event.eventFile === 'string') {
       eventPDFCount += 1;
-      const filename = e.eventFile.split('/').pop() ?? e.eventFile;
-      eventPDFSize += getFileSizeByName(
-        path.join(process.cwd(), 'public/assets/pdfs/events'),
+      const filename = getFilenameFromPath(event.eventFile);
+      eventPDFSize += getExactFileSize(
+        path.join(process.cwd(), 'public/assets/pdfs/events/first-event'),
         filename
       );
     }
   }
 
-  // --- Reports ---
-  let reportImageCount = 0,
-    reportImageSize = 0,
-    reportPDFCount = 0,
-    reportPDFSize = 0;
-  for (const r of reports) {
-    if (Array.isArray(r.images)) {
-      reportImageCount += r.images.length;
-      for (const img of r.images) {
-        const filename = img.split('/').pop() ?? img;
-        reportImageSize += getFileSizeByName(
+  // --- REPORTS ---
+  let reportImageCount = 0;
+  let reportImageSize = 0;
+  let reportPDFCount = 0;
+  let reportPDFSize = 0;
+
+  for (const report of reports) {
+    if (Array.isArray(report.images)) {
+      reportImageCount += report.images.length;
+      for (const img of report.images) {
+        const filename = getFilenameFromPath(img);
+        reportImageSize += getExactFileSize(
           path.join(process.cwd(), 'public/assets/images/reports'),
           filename
         );
       }
     }
-    if (Array.isArray(r.files)) {
-      reportPDFCount += r.files.length;
-      for (const pdf of r.files) {
-        const filename = pdf.split('/').pop() ?? pdf;
-        reportPDFSize += getFileSizeByName(
+
+    if (Array.isArray(report.files)) {
+      reportPDFCount += report.files.length;
+      for (const pdf of report.files) {
+        const filename = getFilenameFromPath(pdf);
+        reportPDFSize += getExactFileSize(
           path.join(process.cwd(), 'public/assets/pdfs/reports'),
           filename
         );
@@ -99,11 +107,10 @@ export async function GET() {
     }
   }
 
-  // Compose response
   return NextResponse.json({
     counts: {
       'Project Images': projectImageCount,
-      'Project PDFs': 0,
+      'Project PDFs': 0, // Modify if you add project PDFs
       'Event Images': eventImageCount,
       'Event PDFs': eventPDFCount,
       'Report Images': reportImageCount,

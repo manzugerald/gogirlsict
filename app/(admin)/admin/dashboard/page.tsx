@@ -1,6 +1,6 @@
 "use client";
 import { useSession } from 'next-auth/react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
 import { DataTable } from '@/components/admin/data-table/data-table/data-table';
@@ -11,6 +11,7 @@ import { reportColumns } from '@/components/admin/data-table/columns/reports';
 import { userColumns } from '@/components/admin/data-table/columns/users';
 import { eventColumns } from '@/components/admin/data-table/columns/events';
 import DashboardChart from './chart/dashboardChart';
+import ChartSection from './chartSection';
 
 const sections = ['events', 'projects', 'reports', 'charts', 'Home Page', 'admin'] as const;
 type Section = (typeof sections)[number];
@@ -24,7 +25,7 @@ const createFormMap: Record<string, any> = {
   reports: dynamic(() => import('./createReportForm'), { ssr: false }),
   admin: dynamic(() => import('./createUserForm'), { ssr: false }),
   events: dynamic(() => import('./createEventForm'), { ssr: false }),
-  // Add more as needed for Events, system, Home Page, etc.
+  charts: dynamic(() => import('./chartSection'), { ssr: false })
 };
 
 export default function AdminDashboardPage() {
@@ -41,11 +42,23 @@ export default function AdminDashboardPage() {
   const [search, setSearch] = useState('');
   const sectionRef = useRef(activeSection);
 
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+
   useEffect(() => {
     if (status === 'unauthenticated') {
       router.replace('/admin');
     }
   }, [status, router]);
+
+  useEffect(() => {
+    
+    const searchType = searchParams.get('type') as Section | null;
+    const defalultSection: Section = 'charts';
+    const sectionToLoad =
+      searchType && sections.includes(searchType) ? searchType : defalultSection;
+    handleCardClick(sectionToLoad);
+  }, []);
 
   function handleEdit(record: any) {
     setEditRecord(record);
@@ -169,6 +182,10 @@ export default function AdminDashboardPage() {
 
   // ---- EVENT HANDLERS ----
   async function handleCardClick(section: Section) {
+    // Update URL with ?type=section
+    const newUrl = `${pathname}?type=${section}`;
+    router.replace(newUrl);
+    // set active section and reset related states
     setActiveSection(section);
     setEditRecord(null);
     setShowCreateForm(false);
@@ -357,7 +374,7 @@ export default function AdminDashboardPage() {
           {!showCreateForm && !editRecord && (
             <div className="mt-6">
               {sectionFeatures[activeSection]?.isChart ? (
-                <DashboardChart />
+                <ChartSection />
               ) : (
                 <DataTable
                   columns={

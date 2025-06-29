@@ -5,7 +5,7 @@ import Menu from "./menu";
 
 const Header = () => {
   return (
-    <header className="w-full bg-[#9f004d] h-12 flex items-center">
+    <header className="w-full fixed top-0 z-50 bg-[#9f004d] h-12 flex items-center">
       <div className="w-full max-w-screen-xl mx-auto flex items-center px-4 gap-4">
         {/* Logo + App Name */}
         <Link href="/" className="flex items-center shrink-0">

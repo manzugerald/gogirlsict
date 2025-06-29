@@ -3,15 +3,17 @@ import MessageCard from "@/components/shared/home/messageCard";
 import { getHomePageContent } from "@/lib/actions/homepage";
 import { getAllMessages } from "@/lib/actions/programsDirectorMessage";
 import { EyeIcon, FocusIcon, HeartIcon, StarIcon, TargetIcon } from "lucide-react";
+import DashboardChart from '../(admin)/admin/dashboard/chart/dashboardChart';
+import FacebookFeed from '@/components/shared/facebook/facebookFeed';
 
 export const metadata = {
-  title: 'Home'
+  title: 'Home',
 };
 
 export default async function HomePage() {
   const content = await getHomePageContent();
   const message = await getAllMessages();
-  const messageContent = message ?.[0];
+  const messageContent = message?.[0];
 
   if (!content) return <div>No Home Page content found</div>;
 
@@ -41,11 +43,25 @@ export default async function HomePage() {
       </section>
 
       <MessageCard
-        name = { messageContent.name }
-        title= {messageContent.title}
-        message= {messageContent.message}
-        imageUrl= {messageContent.nameImageUrl}
+        name={messageContent.name}
+        title={messageContent.title}
+        message={messageContent.message}
+        imageUrl={messageContent.nameImageUrl}
       />
+
+      <div className="wrapper py-10">
+        <div className="flex flex-col md:flex-row gap-6">
+          {/* DashboardChart takes 2/3 */}
+          <div className="md:w-2/3 w-full">
+            <DashboardChart />
+          </div>
+
+          {/* FacebookFeed takes 1/3 and auto height */}
+          <div className="md:w-1/3 w-full">
+            <FacebookFeed />
+          </div>
+        </div>
+      </div>
     </>
   );
 }
