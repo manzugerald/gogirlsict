@@ -4,7 +4,7 @@ import Image from 'next/image';
 
 const ProjectHero = () => {
   return (
-    <div className="w-full h-[25vh] relative mt-0">
+    <div className="w-full aspect-[16/3] relative m-0">
       <Image
         src="/assets/images/projects/banner/banner.png"
         alt="Projects Hero"

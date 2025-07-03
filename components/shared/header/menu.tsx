@@ -40,10 +40,10 @@ const Menu = () => {
     <div className="flex justify-end gap-3">
       {/* Desktop Menu */}
       <nav className="hidden md:flex w-full max-w-xl gap-1 items-center">
-        <Link href="/" className={clsx(linkBase, pathname === "/" && activeClass)}>
+        <Link href="/" className={clsx(linkBase, pathname === '/' && activeClass)}>
           Home
         </Link>
-        <Link href="/projects" className={clsx(linkBase, pathname === "/projects" && activeClass)}>
+        <Link href="/projects" className={clsx(linkBase, pathname === '/projects' && activeClass)}>
           Projects
         </Link>
 
@@ -99,10 +99,16 @@ const Menu = () => {
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>
+        <Link
+          href="/gallery"
+          className={clsx(linkBase, pathname === '/gallery' && activeClass)}
+        >
+          Gallery
+        </Link>
 
         <Link
           href="/get-involved"
-          className={clsx(linkBase, pathname === "/get-involved" && activeClass)}
+          className={clsx(linkBase, pathname === '/get-involved' && activeClass)}
         >
           Get Involved
         </Link>
@@ -125,15 +131,12 @@ const Menu = () => {
           <SheetContent className="flex flex-col items-start gap-2">
             <SheetTitle>Menu</SheetTitle>
 
-            <Link
-              href="/"
-              className={clsx("text-sm pl-3", pathname === "/" && activeClass)}
-            >
+            <Link href="/" className={clsx('text-sm pl-3', pathname === '/' && activeClass)}>
               Home
             </Link>
             <Link
               href="/projects"
-              className={clsx("text-sm pl-3", pathname === "/projects" && activeClass)}
+              className={clsx('text-sm pl-3', pathname === '/projects' && activeClass)}
             >
               Projects
             </Link>
@@ -141,33 +144,36 @@ const Menu = () => {
             {/* Resources expandable menu */}
             <button
               onClick={() => setShowResources((prev) => !prev)}
-              className={clsx("text-sm text-left w-full py-1 pl-3", isResourcesActive && activeClass)}
+              className={clsx(
+                'text-sm text-left w-full py-1 pl-3',
+                isResourcesActive && activeClass
+              )}
             >
-              Resources {showResources ? "▲" : "▼"}
+              Resources {showResources ? '▲' : '▼'}
             </button>
             {showResources && (
               <div className="ml-6 flex flex-col gap-1">
                 <Link
                   href="/resources?type=Videos"
-                  className={clsx("text-sm", isActive("Videos") && activeClass)}
+                  className={clsx('text-sm', isActive('Videos') && activeClass)}
                 >
                   Videos & OERs
                 </Link>
                 <Link
                   href="/resources?type=Reports"
-                  className={clsx("text-sm", isActive("Reports") && activeClass)}
+                  className={clsx('text-sm', isActive('Reports') && activeClass)}
                 >
                   Reports
                 </Link>
                 <Link
                   href="/resources?type=Articles"
-                  className={clsx("text-sm", isActive("Articles") && activeClass)}
+                  className={clsx('text-sm', isActive('Articles') && activeClass)}
                 >
                   Articles
                 </Link>
                 <Link
                   href="/resources?type=Gallery"
-                  className={clsx("text-sm", isActive("Gallery") && activeClass)}
+                  className={clsx('text-sm', isActive('Gallery') && activeClass)}
                 >
                   Gallery
                 </Link>
@@ -176,7 +182,7 @@ const Menu = () => {
 
             <Link
               href="/get-involved"
-              className={clsx("text-sm pl-3", pathname === "/get-involved" && activeClass)}
+              className={clsx('text-sm pl-3', pathname === '/get-involved' && activeClass)}
             >
               Get Involved
             </Link>

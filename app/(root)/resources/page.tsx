@@ -1,140 +1,43 @@
 'use client';
 
-import { useEffect, useState } from 'react';
-import { useSearchParams, useRouter } from 'next/navigation';
-import { Videos, Articles, Gallery, ReportList } from '@/components/resources';
-import ReportDetails, { ReportCardProps } from '@/components/resources/reportDetails';
+import React from 'react';
+import { useSearchParams } from 'next/navigation';
 import ProjectHero from '@/components/shared/header/project-header';
-import VideoResources from './videos/videoResources';
+import VideosSection from './videos/videosSection';
+import ReportsSection from './reports/reportsSection';
 
-const ResourcesPage = () => {
+type SectionType = 'videos' | 'reports';
+const SECTION_LABELS: Record<SectionType, string> = {
+  videos: 'GoGirls ICT Videos Catalogue',
+  reports: 'GoGirls ICT Reports Catalogue',
+};
+
+export default function ResourcesPage() {
   const searchParams = useSearchParams();
-  const router = useRouter();
-  const type = searchParams.get('type') || 'Videos';
-  // Now get reportId as string and parse to number if present
-  const reportIdParam = searchParams.get('report');
-  const reportId = reportIdParam ? Number(reportIdParam) : null;
-
-  const [reports, setReports] = useState<ReportCardProps[]>([]);
-  const [selectedReport, setSelectedReport] = useState<ReportCardProps | null>(null);
-
-  useEffect(() => {
-    if (type === 'Reports') {
-      fetch('/api/reports')
-        .then((res) => res.json())
-        .then((data) => {
-          const cleaned = data.map((report: any) => ({
-            id: report.id,
-            title: report.title,
-            files: report.files || [],
-            images: report.images || [],
-            accessCount: report.accessCount ?? 0,
-            downloadCount: report.downloadCount ?? 0,
-            createdAt: report.createdAt,
-            updatedAt: report.updatedAt,
-            createdBy: report.createdBy
-              ? {
-                  firstName: report.createdBy.firstName,
-                  lastName: report.createdBy.lastName,
-                  image: report.createdBy.image, // For profile photo
-                }
-              : undefined,
-          }));
-          setReports(cleaned);
-
-          // If a report is in the URL, select it (do not increment)
-          if (reportId) {
-            const found = cleaned.find((r: ReportCardProps) => r.id === reportId);
-            setSelectedReport(found || null);
-          } else {
-            setSelectedReport(null);
-          }
-        })
-        .catch((err) => console.error("Failed to fetch reports:", err));
-    }
-  }, [type, reportId]);
-
-  // When user selects a report (from list or more reports)
-  const handleReportSelect = async (id: number) => {
-    const found = reports.find((r) => r.id === id);
-    if (!found) return;
-
-    // Increment access count on click only and get new value
-    const res = await fetch(`/api/reports/${id}/increment-access`, { method: 'POST' });
-    const data = await res.json();
-
-    // Update the selectedReport with the new accessCount
-    const updatedReport = {
-      ...found,
-      accessCount: typeof data.accessCount === "number" ? data.accessCount : found.accessCount,
-    };
-
-    setSelectedReport(updatedReport);
-
-    // Update the URL with the selected report (without reload)
-    router.push(`/resources?type=Reports&report=${id}`);
-  };
-
-  const handleBack = () => {
-    setSelectedReport(null);
-    // Remove the report param from the URL
-    router.push(`/resources?type=Reports`);
-  };
-
-  const RESOURCE_COMPONENTS: Record<string, React.ReactNode> = {
-    Videos: <Videos />,
-    Articles: <Articles />,
-    Gallery: <Gallery />,
-    Reports: (
-      !selectedReport ? (
-        <ReportList
-          reports={reports}
-          onSelect={handleReportSelect}
-          activeId={selectedReport?.id ?? (reportId || undefined)}
-          pageSize={8}
-        />
-      ) : (
-        <ReportDetails
-          reports={reports}
-          selectedReport={selectedReport}
-          onBack={handleBack}
-          onSelect={handleReportSelect}
-        />
-      )
-    ),
-  };
-
-  const SelectedComponent = RESOURCE_COMPONENTS[type] || <Videos />;
-
-  const getCatalogueTitle = (type: string) => {
-    switch (type) {
-      case 'Reports': return 'Reports Catalogue';
-      case 'Videos': return 'Videos Catalogue';
-      case 'Articles': return 'Articles Catalogue';
-      case 'Events': return 'Events Catalogue';
-    }
-  }
+  const currentType = (searchParams.get('type')?.toLowerCase() as SectionType) || 'videos';
 
   return (
     <>
-      <ProjectHero />
-      <VideoResources />
-      <main className="p-6 wrapper">
-        <div className="max-w-7xl w-full mx-auto px-4 md:px-8 lg:px-12">
-          {(['Reports', 'Articles', 'Videos'].includes(type)) && !selectedReport && (
-            <div className="w-full max-w-7xl mx-auto mb-0 rounded bg-gray-100 dark:bg-neutral-800 transition-colors duration-200">
-              <div className="flex flex-col items-center w-full py-6 mb-4">
-                <h2 className="text-2xl md:text-3xl font-bold text-center w-full mb-3">
-                  {getCatalogueTitle(type)}
-                </h2>
-              </div>
-            </div>
-          )}
-          <div className="w-full">{SelectedComponent}</div>
+      {currentType !== 'videos' && <ProjectHero />}
+      {/* Only show catalogue div if not videos */}
+      {currentType !== 'videos' && (
+        <div
+          className="fixed left-0 right-0 z-30 flex justify-center bg-white/90 dark:bg-neutral-900/90 shadow py-4"
+          style={{ top: '40px' }} // Adjust top if needed
+        >
+          <h2 className="text-2xl font-bold mt-2">{SECTION_LABELS[currentType]}</h2>
+        </div>
+      )}
+
+      <main className="p-1 wrapper">
+        <div
+          className="max-w-7xl w-full mx-auto px-4 md:px-2 lg:px-2"
+          style={{ paddingTop: currentType !== 'videos' ? '1rem' : '4.5rem' }} // Adjust so content is not hidden behind the fixed title
+        >
+          {currentType === 'videos' && <VideosSection />}
+          {currentType === 'reports' && <ReportsSection />}
         </div>
       </main>
     </>
   );
-};
-
-export default ResourcesPage;
+}

@@ -7,6 +7,12 @@
 @tailwind components;
 @tailwind utilities;
 
+html, body {
+  overflow-x: hidden;
+  /* optional: prevent unwanted horizontal scroll on mobile */
+  max-width: 100vw;
+}
+
 @layer utilities {
   .wrapper {
     @apply max-w-7xl lg:mx-auto p-5 md:px-10 w-full;

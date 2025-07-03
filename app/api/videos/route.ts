@@ -1,5 +1,5 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@/lib/generated/prisma'; // adjust path as needed
+import { PrismaClient } from '@/lib/generated/prisma';
 
 const prisma = new PrismaClient();
 
@@ -22,7 +22,7 @@ export async function GET() {
   if (cacheMeta && now.getTime() - new Date(cacheMeta.lastFetched).getTime() < CACHE_DURATION_MS) {
     const videos = await prisma.video.findMany({
       orderBy: { publishedAt: 'desc' },
-      take: 10,
+      take: 50, // allow more for infinite scrolling
     });
     return NextResponse.json(videos, { status: 200 });
   }
@@ -30,7 +30,7 @@ export async function GET() {
   // Fetch from YouTube API and update cache
   try {
     const searchResponse = await fetch(
-      `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=10&type=video`
+      `https://www.googleapis.com/youtube/v3/search?key=${API_KEY}&channelId=${CHANNEL_ID}&part=snippet,id&order=date&maxResults=50&type=video`
     );
 
     if (!searchResponse.ok) {
@@ -101,7 +101,7 @@ export async function GET() {
     // Serve existing DB videos as fallback if available
     const fallbackVideos = await prisma.video.findMany({
       orderBy: { publishedAt: 'desc' },
-      take: 10,
+      take: 50,
     });
     if (fallbackVideos.length > 0) {
       return NextResponse.json(fallbackVideos, { status: 200 });

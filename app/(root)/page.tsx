@@ -1,8 +1,8 @@
-import CardDogEar from "@/components/shared/cards/cardDogEar";
-import MessageCard from "@/components/shared/home/messageCard";
-import { getHomePageContent } from "@/lib/actions/homepage";
-import { getAllMessages } from "@/lib/actions/programsDirectorMessage";
-import { EyeIcon, FocusIcon, HeartIcon, StarIcon, TargetIcon } from "lucide-react";
+import CardDogEar from '@/components/shared/cards/cardDogEar';
+import MessageCard from '@/components/shared/home/messageCard';
+import { getHomePageContent } from '@/lib/actions/homepage';
+import { getAllMessages } from '@/lib/actions/programsDirectorMessage';
+import { EyeIcon, FocusIcon, HeartIcon, TargetIcon } from 'lucide-react';
 import DashboardChart from '../(admin)/admin/dashboard/chart/dashboardChart';
 import FacebookFeed from '@/components/shared/facebook/facebookFeed';
 
@@ -20,7 +20,7 @@ export default async function HomePage() {
   return (
     <>
       {/* Hero Section - matches header style */}
-      <div className="w-full h-[40vh]">
+      <div className="w-full h-[40vh] overflow-hidden">
         <video
           src={content.heroVideo}
           className="w-full h-full object-cover"
@@ -32,8 +32,7 @@ export default async function HomePage() {
       </div>
 
       {/* Text Content Section */}
-      {/* Text Content Section */}
-      <section className="wrapper space-y-8 py-10">
+      <section className="wrapper max-w-7xl mx-auto px-4 space-y-8 py-10">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mt-2">
           <CardDogEar title="Vision" content={content.vision} icon={EyeIcon} />
           <CardDogEar title="Mission" content={content.mission} icon={TargetIcon} />
@@ -42,14 +41,14 @@ export default async function HomePage() {
         </div>
       </section>
 
-      <MessageCard
-        name={messageContent.name}
-        title={messageContent.title}
-        message={messageContent.message}
-        imageUrl={messageContent.nameImageUrl}
-      />
+      {/* <MessageCard
+        name={messageContent?.name}
+        title={messageContent?.title}
+        message={messageContent?.message}
+        imageUrl={messageContent?.nameImageUrl}
+      /> */}
 
-      <div className="wrapper py-10">
+      <div className="wrapper max-w-7xl mx-auto px-4 py-10">
         <div className="flex flex-col md:flex-row gap-6">
           {/* DashboardChart takes 2/3 */}
           <div className="md:w-2/3 w-full">

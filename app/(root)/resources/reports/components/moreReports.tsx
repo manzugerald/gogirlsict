@@ -3,7 +3,7 @@
 import { useState } from 'react';
 import { ReportCardProps } from './ReportDetails';
 import { FileText } from 'lucide-react';
-import Pagination from '../shared/pagination';
+import Pagination from '../../../../../components/shared/pagination';
 
 interface MoreReportsProps {
   reports: ReportCardProps[];
