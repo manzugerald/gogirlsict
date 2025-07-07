@@ -21,6 +21,7 @@ export async function GET() {
   const projects = await prisma.project.findMany();
   const reports = await prisma.report.findMany();
   const events = await prisma.event.findMany();
+  const institutions = await prisma.institution.findMany();
 
   // --- PROJECTS ---
   let projectImageCount = 0;
@@ -107,6 +108,38 @@ export async function GET() {
     }
   }
 
+  // --- INSTITUTIONS ---
+  let institutionImageCount = 0;
+  let institutionImageSize = 0;
+
+  for (const institution of institutions) {
+    // institutionImages is an array of image paths (e.g. "/uploads/institutions/filename.jpg")
+    if (Array.isArray(institution.institutionImages)) {
+      institutionImageCount += institution.institutionImages.length;
+      for (const img of institution.institutionImages) {
+        const filename = getFilenameFromPath(img);
+        const size = getExactFileSize(
+          path.join(process.cwd(), 'public/uploads/institutions'),
+          filename
+        );
+        institutionImageSize += size;
+      }
+    }
+    // institution.logo is a single image path (optional)
+    if (institution.logo && typeof institution.logo === 'string') {
+      const filename = getFilenameFromPath(institution.logo);
+      const size = getExactFileSize(
+        path.join(process.cwd(), 'public/uploads/institutions'),
+        filename
+      );
+      if (size > 0) {
+        institutionImageCount += 1;
+        institutionImageSize += size;
+      }
+    }
+    // If you ever add institution PDFs, add similar logic here
+  }
+
   return NextResponse.json({
     counts: {
       'Project Images': projectImageCount,
@@ -115,6 +148,7 @@ export async function GET() {
       'Event PDFs': eventPDFCount,
       'Report Images': reportImageCount,
       'Report PDFs': reportPDFCount,
+      'Institution Images': institutionImageCount,
     },
     sizes: {
       'Project Images': projectImageSize,
@@ -123,6 +157,7 @@ export async function GET() {
       'Event PDFs': eventPDFSize,
       'Report Images': reportImageSize,
       'Report PDFs': reportPDFSize,
+      'Institution Images': institutionImageSize,
     },
   });
 }

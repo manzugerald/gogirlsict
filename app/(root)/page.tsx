@@ -5,10 +5,12 @@ import { getAllMessages } from '@/lib/actions/programsDirectorMessage';
 import { EyeIcon, FocusIcon, HeartIcon, TargetIcon } from 'lucide-react';
 import DashboardChart from '../(admin)/admin/dashboard/chart/dashboardChart';
 import FacebookFeed from '@/components/shared/facebook/facebookFeed';
+import AnimatedStats from '../(admin)/admin/dashboard/chart/animatedStats';
+import HeroVideo from '@/components/shared/heroVideo/heroVideo';
 
-export const metadata = {
-  title: 'Home',
-};
+// export const metadata = {
+//   title: 'Home',
+// };
 
 export default async function HomePage() {
   const content = await getHomePageContent();
@@ -19,18 +21,7 @@ export default async function HomePage() {
 
   return (
     <>
-      {/* Hero Section - matches header style */}
-      <div className="w-full h-[40vh] overflow-hidden">
-        <video
-          src={content.heroVideo}
-          className="w-full h-full object-cover"
-          autoPlay
-          muted
-          loop
-          playsInline
-        />
-      </div>
-
+      <HeroVideo src={content.heroVideo} />
       {/* Text Content Section */}
       <section className="wrapper max-w-7xl mx-auto px-4 space-y-8 py-10">
         <div className="grid gap-6 sm:grid-cols-2 lg:grid-cols-4 mt-2">
@@ -49,17 +40,19 @@ export default async function HomePage() {
       /> */}
 
       <div className="wrapper max-w-7xl mx-auto px-4 py-10">
-        <div className="flex flex-col md:flex-row gap-6">
-          {/* DashboardChart takes 2/3 */}
-          <div className="md:w-2/3 w-full">
-            <DashboardChart />
-          </div>
-
-          {/* FacebookFeed takes 1/3 and auto height */}
-          <div className="md:w-1/3 w-full">
-            <FacebookFeed />
-          </div>
+        <div className="flex flex-col md:flex gap-4">
+          <h2 className="text-2xl font-bold text-center mb-2 text-gray-800 dark:text-gray-100 transition-colors duration-300 pb-4">
+            Quick Starts: Our Impact at a Glance
+          </h2>
+          <AnimatedStats />
         </div>
+        <div className="flex flex-col justify-center items-center pt-4">
+          <h2 className="text-2xl font-bold text-center pb-4 text-gray-800 dark:text-gray-100 transition-colors duration-300">
+            Our Projects, Events, Reports, and Institutions by Numbers
+          </h2>
+          <DashboardChart />
+        </div>
+        <div className="flex flex-col md:flex gap-4 p-8">{/* <FacebookFeed /> */}</div>
       </div>
     </>
   );

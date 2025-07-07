@@ -5,7 +5,15 @@ import { useSearchParams, useRouter } from 'next/navigation';
 import { ReportList } from '@/components/resources';
 import ReportDetails, { ReportCardProps } from './components/reportDetails';
 
-const ReportsSection: React.FC = () => {
+interface ReportsSectionProps {
+  setReportUploader: (uploader: string | null) => void;
+  setReportUploaderImage: (image: string | null) => void;
+}
+
+const ReportsSection: React.FC<ReportsSectionProps> = ({
+  setReportUploader,
+  setReportUploaderImage,
+}) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reportIdParam = searchParams.get('report');
@@ -40,17 +48,35 @@ const ReportsSection: React.FC = () => {
         if (reportId) {
           const found = cleaned.find((r: ReportCardProps) => r.id === reportId);
           setSelectedReport(found || null);
+          // Set uploader info in parent if report is found
+          if (found) {
+            let uploader = '';
+            if (found.createdBy) {
+              uploader = [found.createdBy.firstName, found.createdBy.lastName]
+                .filter(Boolean)
+                .join(' ');
+            }
+            setReportUploader(uploader || null);
+            setReportUploaderImage(found.createdBy?.image || null);
+          } else {
+            setReportUploader(null);
+            setReportUploaderImage(null);
+          }
         } else {
           setSelectedReport(null);
+          setReportUploader(null);
+          setReportUploaderImage(null);
         }
       })
       .catch((err) => console.error('Failed to fetch reports:', err));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reportId]);
 
   const handleReportSelect = async (id: number) => {
     const found = reports.find((r) => r.id === id);
     if (!found) return;
 
+    // update access count
     const res = await fetch(`/api/reports/${id}/increment-access`, { method: 'POST' });
     const data = await res.json();
 
@@ -60,11 +86,27 @@ const ReportsSection: React.FC = () => {
     };
 
     setSelectedReport(updatedReport);
-    router.push(`/resources?type=reports&report=${id}`);
+
+    // Set uploader info in parent
+    let uploader = '';
+    if (found.createdBy) {
+      uploader = [found.createdBy.firstName, found.createdBy.lastName].filter(Boolean).join(' ');
+    }
+    setReportUploader(uploader || null);
+    setReportUploaderImage(found.createdBy?.image || null);
+
+    // Only set the title in the URL
+    const params = new URLSearchParams();
+    params.set('type', 'reports');
+    params.set('report', id.toString());
+    params.set('reportTitle', found.title || '');
+    router.push(`/resources?${params.toString()}`);
   };
 
   const handleBack = () => {
     setSelectedReport(null);
+    setReportUploader(null);
+    setReportUploaderImage(null);
     router.push(`/resources?type=reports`);
   };
 

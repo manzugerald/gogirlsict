@@ -2,9 +2,8 @@
 
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
-import { Bar, Pie } from 'react-chartjs-2';
-import AnimatedStats from './components/animatedStats';
-import { Card, CardHeader, CardContent } from '@/components/ui/card';
+import { Pie } from 'react-chartjs-2';
+import { Card, CardContent } from '@/components/ui/card';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -17,9 +16,10 @@ import {
   ChartOptions,
   Plugin,
 } from 'chart.js';
-import { ChartArea } from 'lucide-react';
+import AnimatedStats from './animatedStats';
+import AnimatedPieceBarChart from './components/animatedPieceBarChart';
+import { cardHoverClass } from '@/utils/styles/card-hover';
 
-// Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
 type CountData = {
@@ -27,6 +27,7 @@ type CountData = {
   reports: number;
   events: number;
   users: number;
+  institutions: number;
 };
 
 const ANIMATION_DURATION = 4.2;
@@ -40,6 +41,7 @@ export default function DashboardChart() {
     reports: 0,
     events: 0,
     users: 0,
+    institutions: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -47,26 +49,29 @@ export default function DashboardChart() {
     async function fetchCounts() {
       setLoading(true);
       try {
-        const [projectsRes, reportsRes, eventsRes, usersRes] = await Promise.all([
+        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes] = await Promise.all([
           fetch('/api/projects'),
           fetch('/api/reports'),
           fetch('/api/events'),
           fetch('/api/users'),
+          fetch('/api/institutions'),
         ]);
-        const [projects, reports, events, users] = await Promise.all([
+        const [projects, reports, events, users, institutions] = await Promise.all([
           projectsRes.json(),
           reportsRes.json(),
           eventsRes.json(),
           usersRes.json(),
+          institutionsRes.json(),
         ]);
         setCounts({
           projects: Array.isArray(projects) ? projects.length : projects.count ?? 0,
           reports: Array.isArray(reports) ? reports.length : reports.count ?? 0,
           events: Array.isArray(events) ? events.length : events.count ?? 0,
           users: Array.isArray(users) ? users.length : users.count ?? 0,
+          institutions: Array.isArray(institutions) ? institutions.length : institutions.count ?? 0,
         });
       } catch (err) {
-        setCounts({ projects: 0, reports: 0, events: 0, users: 0 });
+        setCounts({ projects: 0, reports: 0, events: 0, users: 0, institutions: 0 });
       }
       setLoading(false);
     }
@@ -80,97 +85,29 @@ export default function DashboardChart() {
     return () => clearInterval(interval);
   }, []);
 
-  //conditionally render labels and values
-
-  const labels = ['Projects', 'Reports', 'Events'].concat(isAdmin ? ['Users'] : []);
-  const dataValues = [counts.projects, counts.reports, counts.events].concat(
-    isAdmin ? [counts.users] : []
-  );
-  const backgroundColors = ['#7c3aed', '#f59e42', '#059669'].concat(isAdmin ? ['#2563eb'] : []);
+  // Labels and values, now including Institutions
+  const labels = ['Projects', 'Reports', 'Events', 'Institutions'].concat(isAdmin ? ['Users'] : []);
+  const dataValues = [
+    counts.projects,
+    counts.reports,
+    counts.events,
+    counts.institutions,
+    ...(isAdmin ? [counts.users] : []),
+  ];
+  const backgroundColors = [
+    '#7c3aed', // Projects
+    '#f59e42', // Reports
+    '#059669', // Events
+    '#eab308', // Institutions (yellow)
+    ...(isAdmin ? ['#2563eb'] : []), // Users (blue)
+  ];
   const total = dataValues.reduce((a, b) => a + b, 0);
-
-  const chartBackgroundPlugin = {
-    id: 'chartBackgroundPlugin',
-    beforeDraw: (chart: any) => {
-      const { ctx, chartArea } = chart;
-
-      // Background
-      ctx.save();
-      ctx.fillStyle = '#f3f4f6'; // light gray
-      ctx.fillRect(
-        chartArea.left,
-        chartArea.top,
-        chartArea.right - chartArea.left,
-        chartArea.bottom - chartArea.top
-      );
-
-      // Border
-      ctx.strokeStyle = '#fff'; // outline color
-      ctx.lineWidth = 2;
-      ctx.strokeRect(
-        chartArea.left,
-        chartArea.top,
-        chartArea.right - chartArea.left,
-        chartArea.bottom - chartArea.top
-      );
-      ctx.restore();
-    },
-  };
-
-  const barData = {
-    labels,
-    datasets: [
-      {
-        label: 'Count',
-        data: dataValues,
-        backgroundColor: backgroundColors,
-        borderColor: '#fff',
-        borderRadius: 6,
-        borderWidth: 2,
-        // barThickness: 80, // fixed width in pixels
-        // maxBarThickness: 40, // upper limit
-        // categoryPercentage: 0.8, // % of available width each bar takes
-        // barPercentage: 0.9, // % of category width each bar uses
-      },
-    ],
-  };
-
-  const barOptions: ChartOptions<'bar'> = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: { display: false },
-      title: { display: false },
-      tooltip: { enabled: true },
-    },
-    scales: {
-      y: {
-        beginAtZero: true,
-        ticks: {
-          // color: 'hsl(var(--foreground))', // respects light/dark theme
-          font: {
-            weight: 'bold',
-            size: 16,
-          },
-          stepSize: 1,
-          precision: 0,
-        },
-      },
-      x: {
-        ticks: {
-          // color: 'var(--foreground)',
-
-          font: { size: 16, weight: 'bold' },
-        },
-      },
-    },
-  };
 
   const pieData = {
     labels,
     datasets: [
       {
-        data: total > 0 ? dataValues : [1, 1, 1, 1],
+        data: total > 0 ? dataValues : [1, 1, 1, 1, 1].slice(0, labels.length),
         backgroundColor: backgroundColors,
         borderWidth: 1,
       },
@@ -206,7 +143,7 @@ export default function DashboardChart() {
         const radius = (arc.outerRadius + arc.innerRadius) / 2;
         const x = arc.x + Math.cos(angle) * radius;
         const y = arc.y + Math.sin(angle) * radius;
-        const percent = ((value / total) * 100).toFixed(1) + '%';
+        const percent = total > 0 ? ((value / total) * 100).toFixed(1) + '%' : '';
         ctx.fillStyle = '#fff';
         ctx.font = 'bold 14px Arial';
         ctx.textAlign = 'center';
@@ -238,40 +175,40 @@ export default function DashboardChart() {
   };
 
   return (
-    <div className="flex justify-center">
-      <Card className="w-full max-w-6xl">
-        <CardHeader className="font-bold text-lg text-center">
-          {isAdmin
-            ? 'Projects, Resources, Events, and Users by numbers'
-            : 'Our Projects, Events, and Resources by numbers'}
-        </CardHeader>
-        <CardContent>
+    <div className="w-full">
+      <div className="w-full pb-2">
+        <CardContent className="flex flex-col items-center justify-center">
           {loading ? (
-            <div className="py-8 text-center text-muted-foreground">Loading...</div>
+            <div className="text-center text-muted-foreground">Loading...</div>
           ) : (
-            <div className="flex flex-col gap-12">
-              {/* Add AnimatedStats HERE */}
-              <div className="m-0">
-                <AnimatedStats
-                  stats={[
-                    { label: 'Projects', value: counts.projects, color: '#7c3aed' },
-                    { label: 'Reports', value: counts.reports, color: '#f59e42' },
-                    { label: 'Events', value: counts.events, color: '#059669' },
-                    { label: 'Users', value: counts.users, color: '#2563eb' },
-                  ]}
-                />
-              </div>
-              <div className="flex flex-col md:flex-row gap-6">
-                {/* Bar Chart */}
-                <div className="w-full md:w-2/3 h-[300px] mb-4">
-                  <div className="font-semibold mb-2">Records Count</div>
-                  <Bar data={barData} options={barOptions} plugins={[chartBackgroundPlugin]} />
+            <div className="flex flex-col gap-6">
+              {/* Title */}
+              {/* <div className="text-center font-semibold text-base">
+                {isAdmin
+                  ? 'Projects, Reports, Events, Institutions, and Users by numbers'
+                  : 'Our Projects, Events, Reports, and Institutions by numbers'}
+              </div> */}
+
+              {/* Charts Row */}
+              <div className="flex flex-col md:flex-row gap-6 p-4">
+                {/* Animated Piece Bar Chart */}
+                <div className={`${cardHoverClass} w-full md:w-7/12`}>
+                  <AnimatedPieceBarChart
+                    values={dataValues}
+                    values={dataValues}
+                    labels={labels}
+                    colors={backgroundColors}
+                    animationDuration={1600} // ms, optional
+                    loopPause={1000} //optional
+                  />
                 </div>
 
-                {/* Pie Chart */}
-                <div className="w-full md:w-1/3 flex flex-col gap-6 justify-center items-center">
-                  <div className="font-semibold text-center mb-2">Distribution by Type</div>
-                  <div className="flex justify-center gap-4 items-center">
+                {/* Pie Chart + Legend */}
+                <div
+                  className={`${cardHoverClass} w-full md:w-5/12 flex items-center justify-center md:flex-row gap-6 p-4`}
+                >
+                  <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                    {/* Pie Chart */}
                     <div className="w-48 h-48">
                       <Pie
                         key={loop}
@@ -280,14 +217,20 @@ export default function DashboardChart() {
                         plugins={[piePercentPlugin]}
                       />
                     </div>
+
+                    {/* Legend */}
+                    <div className="md:w-40">
+                      <PieLegend labels={labels} data={dataValues} colors={backgroundColors} />
+                    </div>
                   </div>
-                  <PieLegend labels={labels} data={dataValues} colors={backgroundColors} />
                 </div>
               </div>
             </div>
           )}
         </CardContent>
-      </Card>
+      </div>
     </div>
   );
 }
+// This component displays a dashboard chart with animated stats, a pie chart, and a segmented bar chart.
+// It fetches data from APIs, calculates totals, and displays them in a visually appealing way.

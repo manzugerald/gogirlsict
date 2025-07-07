@@ -7,7 +7,7 @@ export default function ScrollProgressBar() {
   const scrollProgress = useMotionValue(0);
 
   const smoothProgress = useSpring(scrollProgress, {
-    stiffness: 60, // Lower stiffness = smoother
+    stiffness: 60,
     damping: 20,
     mass: 0.2,
   });
@@ -26,9 +26,9 @@ export default function ScrollProgressBar() {
   }, [scrollProgress]);
 
   return (
-    <div className="fixed top-11 left-0 w-full z-50 pointer-events-none">
+    <div className="fixed top-14 left-0 w-full z-[100] pointer-events-none">
       <motion.div
-        className="h-1 bg-pink-500 origin-left"
+        className="h-[4px] origin-left rounded-r-full bg-gradient-to-r from-[#ff4d94] via-pink-500 to-pink-400 shadow-md shadow-pink-500/30 dark:shadow-pink-300/20 transition-all duration-300"
         style={{ scaleX: smoothProgress, width: '100%' }}
       />
     </div>

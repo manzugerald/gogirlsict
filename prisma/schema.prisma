@@ -102,6 +102,13 @@ generator client {
     updatedReports   Report[]  @relation("ReportUpdatedBy")
     createdEvents Event[]        @relation("EventCreatedBy")
     updatedEvents Event[]        @relation("EventUpdatedBy")
+    createdBeneficiaries Beneficiary[] @relation("BeneficiaryCreatedBy")
+    updatedBeneficiaries Beneficiary[] @relation("BeneficiaryUpdatedBy")
+    approvedBeneficiaries Beneficiary[] @relation("BeneficiaryApprovedBy")
+
+    createdInstitutions Institution[] @relation("InstitutionCreatedBy")
+    updatedInstitutions Institution[] @relation("InstitutionUpdatedBy")
+    approvedInstitutions Institution[] @relation("InstitutionApprovedBy")
   }
   
   enum Status {
@@ -192,4 +199,80 @@ generator client {
 model YouTubeCacheMeta {
   id          Int      @id @default(1)
   lastFetched DateTime
+}
+
+// Instition Model 
+// InstitutionType enum for institution types
+enum InstitutionType {
+  education
+  faith_based_organization
+  local_community
+  ngo
+  government
+  other
+}
+
+model Institution {
+  id                String        @id @default(cuid())
+  name              String
+  email             String?        @unique
+  phone             String?       @unique
+  logo              String?
+  institutionImages String[]
+  headName          String?
+  institutionType   InstitutionType
+  createdAt         DateTime      @default(now())
+  updatedAt         DateTime      @updatedAt
+  locations         Location[]
+  beneficiaries     Beneficiary[]
+
+  createdById               String
+  updatedById               String?
+  approvedById              String?
+
+  createdBy                 User           @relation("InstitutionCreatedBy", fields: [createdById], references: [id])
+  updatedBy                 User?          @relation("InstitutionUpdatedBy", fields: [updatedById], references: [id])
+  approvedBy                User?          @relation("InstitutionApprovedBy", fields: [approvedById], references: [id])
+}
+
+// Model for representing a location (name, lat, lng)
+model Location {
+  id             String      @id @default(cuid())
+  locationName           String?
+  latitude       Float?
+  longitude      Float?
+  institutionId  String
+  institution    Institution @relation(fields: [institutionId], references: [id])
+}
+
+// Beneficary model
+enum GenderType {
+  male 
+  female
+}
+model Beneficiary {
+  id                        String         @id @default(cuid())
+  firstName                 String
+  lastName                  String
+  image                     String?
+  images                    String[]  
+  gender                    GenderType
+  email                     String?        @unique
+  phone                     String?        @unique
+  dateOfBirth               DateTime
+  createdAt                 DateTime       @default(now())
+  updatedAt                 DateTime       @updatedAt
+  beneficiaryMessageTitle   Json
+  beneficiaryMessageImages  String[]   
+  beneficiaryMessageStatus  PublishStatus  @default(draft)
+  institutionId             String?
+  institution               Institution?   @relation(fields: [institutionId], references: [id])
+
+  createdById               String
+  updatedById               String?
+  approvedById              String?
+
+  createdBy                 User           @relation("BeneficiaryCreatedBy", fields: [createdById], references: [id])
+  updatedBy                 User?          @relation("BeneficiaryUpdatedBy", fields: [updatedById], references: [id])
+  approvedBy                User?          @relation("BeneficiaryApprovedBy", fields: [approvedById], references: [id])
 }

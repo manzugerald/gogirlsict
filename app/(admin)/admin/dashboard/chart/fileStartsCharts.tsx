@@ -24,7 +24,7 @@ function formatSize(bytes: number) {
   return bytes + ' B';
 }
 
-const pieModuleLabels = ['Projects', 'Events', 'Reports'];
+const pieModuleLabels = ['Projects', 'Events', 'Reports', 'Institutions'];
 
 export default function FilesStatsCharts() {
   const [loading, setLoading] = useState(true);
@@ -35,6 +35,7 @@ export default function FilesStatsCharts() {
     'Event PDFs': 0,
     'Report Images': 0,
     'Report PDFs': 0,
+    'Institution Images': 0,
   });
   const [sizes, setSizes] = useState({
     'Project Images': 0,
@@ -43,14 +44,21 @@ export default function FilesStatsCharts() {
     'Event PDFs': 0,
     'Report Images': 0,
     'Report PDFs': 0,
+    'Institution Images': 0,
   });
 
   useEffect(() => {
     fetch('/api/file-stats')
       .then((res) => res.json())
       .then((data) => {
-        setCounts(data.counts);
-        setSizes(data.sizes);
+        setCounts({
+          ...data.counts,
+          'Institution Images': data.counts['Institution Images'] ?? 0,
+        });
+        setSizes({
+          ...data.sizes,
+          'Institution Images': data.sizes['Institution Images'] ?? 0,
+        });
         setLoading(false);
       });
   }, []);
@@ -62,16 +70,23 @@ export default function FilesStatsCharts() {
     'Event PDFs',
     'Report Images',
     'Report PDFs',
+    'Institution Images',
   ];
 
-  const barColors = ['#7c3aed', '#a78bfa', '#059669', '#34d399', '#f59e42', '#fdba74'];
+  const barColors = [
+    '#7c3aed', // Projects
+    '#a78bfa', // Project PDFs
+    '#059669', // Events
+    '#34d399', // Event PDFs
+    '#f59e42', // Reports
+    '#fdba74', // Report PDFs
+    '#eab308', // Institutions (yellow)
+  ];
 
   const chartBackgroundPlugin = {
     id: 'chartBackgroundPlugin',
     beforeDraw: (chart: any) => {
       const { ctx, chartArea } = chart;
-
-      // Background
       ctx.save();
       ctx.fillStyle = '#f3f4f6'; // light gray
       ctx.fillRect(
@@ -80,8 +95,6 @@ export default function FilesStatsCharts() {
         chartArea.right - chartArea.left,
         chartArea.bottom - chartArea.top
       );
-
-      // Border
       ctx.strokeStyle = '#fff'; // outline color
       ctx.lineWidth = 2;
       ctx.strokeRect(
@@ -121,14 +134,19 @@ export default function FilesStatsCharts() {
     datasets: [
       {
         label: 'Images Count',
-        data: [counts['Project Images'], counts['Event Images'], counts['Report Images']],
-        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
+        data: [
+          counts['Project Images'],
+          counts['Event Images'],
+          counts['Report Images'],
+          counts['Institution Images'],
+        ],
+        backgroundColor: ['#7c3aed', '#059669', '#f59e42', '#eab308'],
       },
     ],
   };
 
   const piePdfsData = {
-    labels: pieModuleLabels,
+    labels: pieModuleLabels.slice(0, 3), // Only Projects, Events, Reports have PDFs
     datasets: [
       {
         label: 'PDFs Count',
@@ -147,14 +165,15 @@ export default function FilesStatsCharts() {
           +(sizes['Project Images'] / 1048576).toFixed(2),
           +(sizes['Event Images'] / 1048576).toFixed(2),
           +(sizes['Report Images'] / 1048576).toFixed(2),
+          +(sizes['Institution Images'] / 1048576).toFixed(2),
         ],
-        backgroundColor: ['#7c3aed', '#059669', '#f59e42'],
+        backgroundColor: ['#7c3aed', '#059669', '#f59e42', '#eab308'],
       },
     ],
   };
 
   const piePdfsSizeData = {
-    labels: pieModuleLabels,
+    labels: pieModuleLabels.slice(0, 3),
     datasets: [
       {
         label: 'PDFs Size (MB)',
@@ -180,6 +199,7 @@ export default function FilesStatsCharts() {
           counts['Event PDFs'],
           counts['Report Images'],
           counts['Report PDFs'],
+          counts['Institution Images'],
         ],
         backgroundColor: barColors,
       },
@@ -198,6 +218,7 @@ export default function FilesStatsCharts() {
           +(sizes['Event PDFs'] / 1048576).toFixed(2),
           +(sizes['Report Images'] / 1048576).toFixed(2),
           +(sizes['Report PDFs'] / 1048576).toFixed(2),
+          +(sizes['Institution Images'] / 1048576).toFixed(2),
         ],
         backgroundColor: barColors,
       },
@@ -212,14 +233,12 @@ export default function FilesStatsCharts() {
     scales: {
       x: {
         ticks: {
-          // color: 'var(--foreground)',
           font: { size: 16, weight: 'bold' },
         },
       },
       y: {
         beginAtZero: true,
         ticks: {
-          // color: 'var(--foreground)',
           font: { size: 16, weight: 'bold' },
           precision: 0,
         },
@@ -312,13 +331,14 @@ export default function FilesStatsCharts() {
                 {/* Bar chart */}
                 <div className="w-full md:w-2/3 h-[350px]">
                   <div className="font-semibold mb-2 text-center">Image & PDF Sizes (MB)</div>
-                    <Bar
-                      data={barDataSizes} options={barOptions} plugins={[chartBackgroundPlugin]}
-                    />
+                  <Bar data={barDataSizes} options={barOptions} plugins={[chartBackgroundPlugin]} />
                   <div className="text-sm mt-2">
                     Total Images Size:{' '}
                     {formatSize(
-                      sizes['Project Images'] + sizes['Event Images'] + sizes['Report Images']
+                      sizes['Project Images'] +
+                        sizes['Event Images'] +
+                        sizes['Report Images'] +
+                        sizes['Institution Images']
                     )}
                     , Total PDFs Size:{' '}
                     {formatSize(sizes['Project PDFs'] + sizes['Event PDFs'] + sizes['Report PDFs'])}
@@ -371,3 +391,6 @@ export default function FilesStatsCharts() {
     </div>
   );
 }
+// This file is responsible for displaying file statistics charts in the admin dashboard.
+// It fetches file counts and sizes from the API and renders bar and pie charts using Chart.js.
+// The charts include:    

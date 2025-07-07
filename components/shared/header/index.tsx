@@ -1,28 +1,31 @@
-import Link from "next/link";
-import Image from "next/image";
-import { APP_NAME } from "@/lib/constants";
-import Menu from "./menu";
+'use client';
+
+import Link from 'next/link';
+import Image from 'next/image';
+import { APP_NAME } from '@/lib/constants';
+import Menu from './menu';
 
 const Header = () => {
   return (
-    <header className="w-full fixed top-0 z-50 bg-[#9f004d] h-12 flex items-center">
-      <div className="w-full max-w-screen-xl mx-auto flex items-center px-4 gap-4">
+    <header className="fixed top-0 z-50 w-full bg-[#9f004d]/95 backdrop-blur-md shadow-md h-14 flex items-center">
+      <div className="w-full max-w-screen-xl mx-auto flex items-center justify-between px-4">
         {/* Logo + App Name */}
-        <Link href="/" className="flex items-center shrink-0">
+        <Link href="/" className="flex items-center gap-2 shrink-0">
           <Image
             src="/assets/images/system/goGirlsLogoV2.svg"
             alt={`${APP_NAME} logo`}
-            height={60}
-            width={60}
-            priority={true}
+            height={40}
+            width={40}
+            className="h-auto"
+            priority
           />
-          <span className="hidden lg:block font-bold text-lg ml-3 text-white">
+          <span className="hidden lg:inline text-white text-lg font-semibold tracking-wide">
             {APP_NAME}
           </span>
         </Link>
 
-        {/* Menu fills the remaining space */}
-        <div className="flex-grow">
+        {/* Right-aligned Menu */}
+        <div className="ml-auto">
           <Menu />
         </div>
       </div>

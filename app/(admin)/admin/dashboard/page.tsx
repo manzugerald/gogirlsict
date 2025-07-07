@@ -1,31 +1,40 @@
-"use client";
+'use client';
 import { useSession } from 'next-auth/react';
 import { useRouter, useSearchParams, usePathname } from 'next/navigation';
 import { useEffect, useState, useMemo, useRef, Suspense } from 'react';
 import { Card } from '@/components/ui/card';
-import { DataTable } from '@/components/admin/data-table/data-table/data-table';
-import { projectColumns } from '@/components/admin/data-table/columns/projects';
-import { columns } from '@/components/admin/data-table/columns';
+import { DataTable } from '@/app/(admin)/admin/dashboard/data-table/data-table/data-table';
+import { projectColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/projects';
+import { columns } from '@/app/(admin)/admin/dashboard/data-table/columns';
 import dynamic from 'next/dynamic';
-import { reportColumns } from '@/components/admin/data-table/columns/reports';
-import { userColumns } from '@/components/admin/data-table/columns/users';
-import { eventColumns } from '@/components/admin/data-table/columns/events';
+import { reportColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/reports';
+import { userColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/users';
+import { eventColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/events';
+import { institutionColumns } from './data-table/columns/institutions'; // <-- ADD THIS IMPORT
 import DashboardChart from './chart/dashboardChart';
 import ChartSection from './chartSection';
 
-const sections = ['events', 'projects', 'reports', 'charts', 'Home Page', 'admin'] as const;
+const sections = [
+  'events',
+  'projects',
+  'reports',
+  'institutions',
+  'charts',
+  'Home Page',
+  'admin',
+] as const;
 type Section = (typeof sections)[number];
-const validKeys = ['projects', 'reports', 'admin', 'events'] as const;
+const validKeys = ['projects', 'reports', 'admin', 'events', 'institutions'] as const;
 
 const rowsPerPageOptions = [5, 10, 25, 50];
 
-// Dynamic imports for create/edit forms per section (add yours as needed)
 const createFormMap: Record<string, any> = {
   projects: dynamic(() => import('./createProjectForm'), { ssr: false }),
   reports: dynamic(() => import('./createReportForm'), { ssr: false }),
   admin: dynamic(() => import('./createUserForm'), { ssr: false }),
   events: dynamic(() => import('./createEventForm'), { ssr: false }),
-  charts: dynamic(() => import('./chartSection'), { ssr: false })
+  institutions: dynamic(() => import('./createInstitutionForm'), { ssr: false }),
+  charts: dynamic(() => import('./chartSection'), { ssr: false }),
 };
 
 export default function AdminDashboardPage() {
@@ -52,12 +61,12 @@ export default function AdminDashboardPage() {
   }, [status, router]);
 
   useEffect(() => {
-    
     const searchType = searchParams.get('type') as Section | null;
     const defalultSection: Section = 'charts';
     const sectionToLoad =
       searchType && sections.includes(searchType) ? searchType : defalultSection;
     handleCardClick(sectionToLoad);
+    // eslint-disable-next-line
   }, []);
 
   function handleEdit(record: any) {
@@ -66,7 +75,7 @@ export default function AdminDashboardPage() {
   }
 
   async function handleDelete(
-    type: 'projects' | 'reports' | 'users' | 'events',
+    type: 'projects' | 'reports' | 'users' | 'events' | 'institutions',
     id: string | number
   ) {
     const typeLabel = type.slice(0, -1); // remove trailing 's' → for confirmation text
@@ -164,6 +173,25 @@ export default function AdminDashboardPage() {
         ...eventColumns({
           onEdit: handleEdit,
           onDelete: (id) => handleDelete('events', id),
+        }),
+      ],
+    },
+    institutions: {
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/institutions',
+      columns: institutionColumns,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...institutionColumns({
+          onEdit: handleEdit,
+          onDelete: (id) => handleDelete('institutions', id),
         }),
       ],
     },
@@ -268,7 +296,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="grid md:grid-cols-6 gap-4">
+      <div className="grid md:grid-cols-7 gap-4">
         {sections.map((section) => (
           <Card
             key={section}
@@ -293,7 +321,7 @@ export default function AdminDashboardPage() {
 
       {activeSection && (
         <>
-          {/* Controls Row: Show only if NOT adding or editing snf noy vhstyd */}
+          {/* Controls Row: Show only if NOT adding or editing */}
           {!showCreateForm && !editRecord && !sectionFeatures[activeSection]?.isChart && (
             <div className="flex items-center justify-between mt-8">
               <div className="flex gap-4 items-center">
@@ -415,3 +443,6 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
+// This file is the main dashboard for the admin section, allowing management of projects, reports, users, events, and institutions.
+// It includes dynamic forms for creating/editing records, a data table for displaying records, and pagination controls.
+// The dashboard also supports searching, sorting, and filtering of records.  

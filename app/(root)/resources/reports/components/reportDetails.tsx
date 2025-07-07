@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { Download, FileText } from 'lucide-react';
 import MoreReports from './moreReports';
+import ReportList from './reportList';
 
 export interface ReportCardProps {
   id: number;
@@ -37,10 +38,14 @@ function formatDateWithSuperscript(dateStr?: string): JSX.Element | string {
   const getOrdinal = (n: number) => {
     if (n > 3 && n < 21) return 'th';
     switch (n % 10) {
-      case 1: return 'st';
-      case 2: return 'nd';
-      case 3: return 'rd';
-      default: return 'th';
+      case 1:
+        return 'st';
+      case 2:
+        return 'nd';
+      case 3:
+        return 'rd';
+      default:
+        return 'th';
     }
   };
   const ordinal = getOrdinal(day);
@@ -77,7 +82,7 @@ export default function ReportDetails({
 
   useEffect(() => {
     if (selectedReport?.files?.[0]) {
-      fetch(selectedReport.files[0], { method: "HEAD" }).then(res => {
+      fetch(selectedReport.files[0], { method: 'HEAD' }).then((res) => {
         setFileMeta({
           size: Number(res.headers.get('content-length')),
         });
@@ -91,11 +96,11 @@ export default function ReportDetails({
     if (selectedReport?.files?.[0] && selectedReport?.id != null) {
       // Increment download count in the backend and update local
       fetch(`/api/reports/${selectedReport.id}/increment-download`, {
-        method: 'POST'
+        method: 'POST',
       })
-        .then(res => res.json())
-        .then(data => {
-          if (typeof data.downloadCount === "number") {
+        .then((res) => res.json())
+        .then((data) => {
+          if (typeof data.downloadCount === 'number') {
             setLocalDownloadCount(data.downloadCount);
           }
         });
@@ -104,52 +109,20 @@ export default function ReportDetails({
       const link = document.createElement('a');
       link.href = selectedReport.files[0];
       link.download = selectedReport.title + '.pdf';
-      link.target = "_blank";
+      link.target = '_blank';
       link.click();
     }
   };
 
   if (!selectedReport) return null;
 
-  // For uploader info
-  const uploader = selectedReport.createdBy;
-  const uploaderName = uploader
-    ? [uploader.firstName, uploader.lastName].filter(Boolean).join(' ')
-    : 'Unknown';
-  const uploaderPhoto = uploader?.image || undefined;
+  // Exclude the current report from the appended list
+  const otherReports = reports.filter((r) => r.id !== selectedReport.id);
 
   return (
-    <div className="mt-8 w-full flex flex-col items-center">
-      {/* Title & Uploaded By */}
-      <div className="w-full max-w-7xl mx-auto mb-0 rounded bg-gray-100 dark:bg-neutral-800 transition-colors duration-200">
-        <div className="flex flex-col items-center w-full py-6">
-          <h2 className="text-2xl md:text-3xl font-bold text-center w-full mb-3">
-            {selectedReport.title}
-          </h2>
-          <div className="flex items-center justify-center gap-2 rounded px-4 py-2">
-            <span className="text-sm text-gray-700 dark:text-gray-200">Uploaded By:</span>
-            <span className="text-sm font-medium text-gray-900 dark:text-gray-100">
-              {uploader?.firstName || "Unknown"}
-              {uploader?.lastName ? ` ${uploader.lastName}` : ""}
-            </span>
-            {uploader?.image && (
-              <img
-                src={uploader.image}
-                alt={
-                  uploader?.firstName || uploader?.lastName
-                    ? `${uploader.firstName || ""} ${uploader.lastName || ""}`.trim()
-                    : "Uploader"
-                }
-                className="w-7 h-7 rounded-full object-cover border border-white"
-                style={{ background: "#fff" }}
-              />
-            )}
-          </div>
-        </div>
-      </div>
-      {/* Back to reports button below the title/uploader div */}
+    <div className="w-full flex flex-col items-center">
       <button
-        className="mt-4 mb-2 px-4 py-2 bg-gray-200 dark:bg-neutral-800 rounded hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-100 font-medium flex items-center"
+        className="mb-2 px-4 bg-gray-200 dark:bg-neutral-800 rounded hover:bg-gray-300 dark:hover:bg-neutral-700 text-gray-700 dark:text-gray-100 font-medium flex items-center"
         onClick={onBack}
       >
         ← Back to reports
@@ -166,7 +139,7 @@ export default function ReportDetails({
               src={selectedReport.images[0]}
               alt={selectedReport.title}
               className="max-h-[280px] w-full object-contain rounded shadow border border-neutral-200 dark:border-neutral-700 bg-white dark:bg-neutral-900"
-              style={{ width: "100%", maxWidth: `${IMAGE_WIDTH}px`, minWidth: `${IMAGE_WIDTH}px` }}
+              style={{ width: '100%', maxWidth: `${IMAGE_WIDTH}px`, minWidth: `${IMAGE_WIDTH}px` }}
             />
           ) : (
             <div className="text-muted-foreground text-center">No image available</div>
@@ -187,11 +160,17 @@ export default function ReportDetails({
               `}
               onClick={handleDownload}
             >
-              <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+              <span
+                className="rounded-full bg-pink-800 flex items-center justify-center mr-2"
+                style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}
+              >
                 <FileText size={18} color="white" />
               </span>
               Download Report
-              <span className="rounded-full bg-pink-800 flex items-center justify-center mr-2" style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}>
+              <span
+                className="rounded-full bg-pink-800 flex items-center justify-center mr-2"
+                style={{ width: 28, height: 28, minWidth: 28, minHeight: 28 }}
+              >
                 <Download size={18} color="white" />
               </span>
             </button>
@@ -213,34 +192,40 @@ export default function ReportDetails({
             <tbody>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">Access Count</td>
-                <td className="border px-4 py-2">{localAccessCount ?? selectedReport.accessCount}</td>
+                <td className="border px-4 py-2">
+                  {localAccessCount ?? selectedReport.accessCount}
+                </td>
               </tr>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">Download Count</td>
-                <td className="border px-4 py-2">{localDownloadCount ?? selectedReport.downloadCount}</td>
+                <td className="border px-4 py-2">
+                  {localDownloadCount ?? selectedReport.downloadCount}
+                </td>
               </tr>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">Date Created</td>
-                <td className="border px-4 py-2">{formatDateWithSuperscript(selectedReport.createdAt)}</td>
+                <td className="border px-4 py-2">
+                  {formatDateWithSuperscript(selectedReport.createdAt)}
+                </td>
               </tr>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">Date Modified</td>
-                <td className="border px-4 py-2">{formatDateWithSuperscript(selectedReport.updatedAt)}</td>
+                <td className="border px-4 py-2">
+                  {formatDateWithSuperscript(selectedReport.updatedAt)}
+                </td>
               </tr>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">File Size</td>
                 <td className="border px-4 py-2">
                   {fileMeta.size !== undefined
                     ? `${(fileMeta.size / 1024).toFixed(2)} KB`
-                    : "Loading..."}
+                    : 'Loading...'}
                 </td>
               </tr>
               <tr className="hover:bg-[#9f004d] hover:text-white transition-colors">
                 <td className="border px-4 py-2">Document Type</td>
                 <td className="border px-4 py-2">
-                  {selectedReport.files?.[0]
-                    ? getFileExtension(selectedReport.files[0])
-                    : ''}
+                  {selectedReport.files?.[0] ? getFileExtension(selectedReport.files[0]) : ''}
                 </td>
               </tr>
             </tbody>
@@ -248,13 +233,21 @@ export default function ReportDetails({
         </div>
         {/* Right: MoreReports */}
         <div className="w-full lg:w-[340px] flex flex-col items-center lg:items-start">
-          <MoreReports
-            reports={reports}
-            activeId={selectedReport.id}
-            onSelect={onSelect}
-          />
+          <MoreReports reports={reports} activeId={selectedReport.id} onSelect={onSelect} />
         </div>
       </div>
+      {/* Appended Report List (excluding current) */}
+      {otherReports.length > 0 && (
+        <div className="w-full max-w-7xl mx-auto mt-10">
+          <h3 className="text-xl font-bold mb-4">Other Reports</h3>
+          <ReportList
+            reports={otherReports}
+            onSelect={onSelect}
+            pageSize={8}
+            activeId={undefined}
+          />
+        </div>
+      )}
     </div>
   );
 }
