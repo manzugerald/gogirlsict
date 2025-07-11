@@ -8,6 +8,7 @@ interface CardDogEarProps {
   title: string;
   content: string;
   icon: LucideIcon;
+  imgUrl?: string;
   href?: string;
 }
 
@@ -26,7 +27,7 @@ const flapKeyframes = `
 }
 `;
 
-const CardDogEar = ({ title, content, icon: Icon, href }: CardDogEarProps) => {
+const CardDogEar = ({ title, content, icon: Icon, imgUrl, href }: CardDogEarProps) => {
   const card = (
     <Card
       className={cardHoverClass}
@@ -35,6 +36,8 @@ const CardDogEar = ({ title, content, icon: Icon, href }: CardDogEarProps) => {
       }}
     >
       <style>{flapKeyframes}</style>
+
+      {/* Dog Ear Effect */}
       <div
         className={cn(
           'absolute top-0 right-0 w-0 h-0 z-30',
@@ -63,12 +66,25 @@ const CardDogEar = ({ title, content, icon: Icon, href }: CardDogEarProps) => {
         <StarIcon className="w-4 h-4" />
       </div>
 
-      <CardHeader className="bg-pink-800 text-white flex items-center justify-between px-4 py-3 relative z-20">
+      {/* Image with zero spacing */}
+      {imgUrl && (
+        <div className="w-full relative z-10">
+          <img
+            src={imgUrl}
+            alt={title}
+            className="w-full h-32 object-cover m-0 p-0 block rounded-none"
+            style={{ borderRadius: 0 }}
+          />
+        </div>
+      )}
+
+      {/* Title immediately follows image with no spacing */}
+      <CardHeader className="bg-pink-800 text-white flex items-center justify-between px-4 py-3 relative z-20 m-0 rounded-none">
         <CardTitle className="text-white text-base font-semibold">{title}</CardTitle>
         <Icon className="h-5 w-5 text-white" />
       </CardHeader>
 
-      <CardContent className="p-4 text-sm relative z-10">
+      <CardContent className="pt-2 pb-3 px-4 text-sm relative z-10">
         <p>{content}</p>
       </CardContent>
     </Card>

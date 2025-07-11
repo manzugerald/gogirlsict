@@ -10,7 +10,8 @@ import dynamic from 'next/dynamic';
 import { reportColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/reports';
 import { userColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/users';
 import { eventColumns } from '@/app/(admin)/admin/dashboard/data-table/columns/events';
-import { institutionColumns } from './data-table/columns/institutions'; // <-- ADD THIS IMPORT
+import { institutionColumns } from './data-table/columns/institutions';
+import { beneficiaryColumns } from './data-table/columns/beneficiaries'; // <-- ADD THIS IMPORT
 import DashboardChart from './chart/dashboardChart';
 import ChartSection from './chartSection';
 
@@ -19,12 +20,20 @@ const sections = [
   'projects',
   'reports',
   'institutions',
+  'beneficiaries', // <-- ADD THIS
   'charts',
   'Home Page',
   'admin',
 ] as const;
 type Section = (typeof sections)[number];
-const validKeys = ['projects', 'reports', 'admin', 'events', 'institutions'] as const;
+const validKeys = [
+  'projects',
+  'reports',
+  'admin',
+  'events',
+  'institutions',
+  'beneficiaries',
+] as const;
 
 const rowsPerPageOptions = [5, 10, 25, 50];
 
@@ -34,6 +43,7 @@ const createFormMap: Record<string, any> = {
   admin: dynamic(() => import('./createUserForm'), { ssr: false }),
   events: dynamic(() => import('./createEventForm'), { ssr: false }),
   institutions: dynamic(() => import('./createInstitutionForm'), { ssr: false }),
+  beneficiaries: dynamic(() => import('./createBeneficiaryForm'), { ssr: false }), 
   charts: dynamic(() => import('./chartSection'), { ssr: false }),
 };
 
@@ -75,7 +85,7 @@ export default function AdminDashboardPage() {
   }
 
   async function handleDelete(
-    type: 'projects' | 'reports' | 'users' | 'events' | 'institutions',
+    type: 'projects' | 'reports' | 'users' | 'events' | 'institutions' | 'beneficiaries', // <-- ADD beneficiaries
     id: string | number
   ) {
     const typeLabel = type.slice(0, -1); // remove trailing 's' → for confirmation text
@@ -195,6 +205,26 @@ export default function AdminDashboardPage() {
         }),
       ],
     },
+    beneficiaries: {
+      // <-- ADD THIS SECTION
+      searchable: true,
+      sortable: true,
+      addNew: true,
+      apiRoute: '/api/beneficiaries',
+      columns: beneficiaryColumns,
+      getColumns: () => [
+        {
+          id: 'number',
+          header: 'No.',
+          cell: ({ row }: any) => (page - 1) * rowsPerPage + row.index + 1,
+          size: 50,
+        },
+        ...beneficiaryColumns({
+          onEdit: handleEdit,
+          onDelete: (id) => handleDelete('beneficiaries', id),
+        }),
+      ],
+    },
     charts: {
       isChart: true,
     },
@@ -296,7 +326,7 @@ export default function AdminDashboardPage() {
 
   return (
     <div className="p-6">
-      <div className="grid md:grid-cols-7 gap-4">
+      <div className="grid md:grid-cols-8 gap-4">
         {sections.map((section) => (
           <Card
             key={section}
@@ -443,6 +473,6 @@ export default function AdminDashboardPage() {
     </div>
   );
 }
-// This file is the main dashboard for the admin section, allowing management of projects, reports, users, events, and institutions.
+// This file is the main dashboard for the admin section, allowing management of projects, reports, users, events, institutions, and beneficiaries.
 // It includes dynamic forms for creating/editing records, a data table for displaying records, and pagination controls.
-// The dashboard also supports searching, sorting, and filtering of records.  
+// The dashboard also supports searching, sorting, and filtering of records.

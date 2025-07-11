@@ -16,11 +16,19 @@ import { cardHoverClass } from '@/utils/styles/card-hover';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend);
 
-const defaultColors = ['#7c3aed', '#f59e42', '#059669', '#eab308', '#2563eb'];
+// Added color for Beneficiaries. Institutions uses same as before.
+const defaultColors = [
+  '#7c3aed', // Projects
+  '#f59e42', // Reports
+  '#059669', // Events
+  '#7c482b', // Institutions (same as in stats)
+  '#2563eb', // Users
+  '#eab308', // Beneficiaries (matches stats)
+];
 
 export default function AnimatedPieceBarChart({
-  values = [7, 4, 9, 3, 6],
-  labels = ['Projects', 'Reports', 'Events', 'Institutions', 'Users'],
+  values = [7, 4, 9, 3, 6, 12],
+  labels = ['Projects', 'Reports', 'Events', 'Institutions', 'Users', 'Beneficiaries'],
   colors = defaultColors,
   animationDuration = 1600, // ms for one fill
   loopPause = 800, // ms to show the full bar before restarting animation
@@ -85,7 +93,7 @@ export default function AnimatedPieceBarChart({
       {
         label: 'Count',
         data: animatedData,
-        backgroundColor: colors,
+        backgroundColor: colors.slice(0, labels.length),
         borderRadius: 7,
         borderWidth: 0,
         maxBarThickness: 80,
@@ -127,5 +135,5 @@ export default function AnimatedPieceBarChart({
     </div>
   );
 }
-// This component displays a bar chart with animated filling bars based on provided values and labels.
-// It supports custom colors, animation duration, and loop pause time.
+// This component displays a bar chart with animated filling bars based on provided values and labels, including Institutions and Beneficiaries.
+// It uses Chart.js for rendering and supports custom colors, animation duration, and loop pause.

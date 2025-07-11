@@ -10,29 +10,21 @@ type Stat = {
   color?: string;
 };
 
-/**
- * AnimatedStats: Fetches stats and displays stat cards that count up to their value,
- * with a looping animated progress/counter circle around the number.
- * If on an admin route, includes Users stat.
- * Usage: <AnimatedStats /> anywhere, no props needed.
- */
-
-// ---- Clearly defined constants for all dimensions and animation ----
-const CARD_MIN_WIDTH = 200;
-const CARD_PADDING_X = 16; // px-16 (Tailwind: px-16 = 4rem)
-const CARD_PADDING_Y = 10; // py-10 (Tailwind: py-10 = 2.5rem)
-const SVG_SIZE = 120; // double original
-const CIRCLE_RADIUS = 44; // double original
-const CIRCLE_STROKE_WIDTH = 12;
-const CIRCLE_DASHARRAY = 2 * Math.PI * CIRCLE_RADIUS; // Circumference
-const FONT_SIZE = 54; // text-5xl
+// ---- Slightly reduced dimensions, animation untouched ----
+const CARD_MIN_WIDTH = 160;
+const CARD_PADDING_X = 10;
+const CARD_PADDING_Y = 8;
+const SVG_SIZE = 90;
+const CIRCLE_RADIUS = 33;
+const CIRCLE_STROKE_WIDTH = 9;
+const CIRCLE_DASHARRAY = 2 * Math.PI * CIRCLE_RADIUS;
+const FONT_SIZE = 38;
 const ANIMATION_DURATION = 10; // seconds
-const CIRCLE_DELAY_STEP = 0.32; // seconds, double original
-const STAT_LABEL_FONT_SIZE = 18; // text-base
+const CIRCLE_DELAY_STEP = 0.32;
+const STAT_LABEL_FONT_SIZE = 15;
 
 export default function AnimatedStats() {
   const pathname = usePathname();
-  // Show users stat only if route is /admin or contains /admin
   const showUsers = pathname === '/admin' || pathname.startsWith('/admin/');
 
   const [counts, setCounts] = useState<{
@@ -41,12 +33,14 @@ export default function AnimatedStats() {
     events: number;
     users: number;
     institutions: number;
+    beneficiaries: number;
   }>({
     projects: 0,
     reports: 0,
     events: 0,
     users: 0,
     institutions: 0,
+    beneficiaries: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -54,19 +48,22 @@ export default function AnimatedStats() {
     async function fetchCounts() {
       setLoading(true);
       try {
-        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes] = await Promise.all([
-          fetch('/api/projects'),
-          fetch('/api/reports'),
-          fetch('/api/events'),
-          fetch('/api/users'),
-          fetch('/api/institutions'),
-        ]);
-        const [projects, reports, events, users, institutions] = await Promise.all([
+        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes, beneficiariesRes] =
+          await Promise.all([
+            fetch('/api/projects'),
+            fetch('/api/reports'),
+            fetch('/api/events'),
+            fetch('/api/users'),
+            fetch('/api/institutions'),
+            fetch('/api/beneficiaries'),
+          ]);
+        const [projects, reports, events, users, institutions, beneficiaries] = await Promise.all([
           projectsRes.json(),
           reportsRes.json(),
           eventsRes.json(),
           usersRes.json(),
           institutionsRes.json(),
+          beneficiariesRes.json(),
         ]);
         setCounts({
           projects: Array.isArray(projects) ? projects.length : projects.count ?? 0,
@@ -74,9 +71,19 @@ export default function AnimatedStats() {
           events: Array.isArray(events) ? events.length : events.count ?? 0,
           users: Array.isArray(users) ? users.length : users.count ?? 0,
           institutions: Array.isArray(institutions) ? institutions.length : institutions.count ?? 0,
+          beneficiaries: Array.isArray(beneficiaries)
+            ? beneficiaries.length
+            : beneficiaries.count ?? 0,
         });
       } catch (err) {
-        setCounts({ projects: 0, reports: 0, events: 0, users: 0, institutions: 0 });
+        setCounts({
+          projects: 0,
+          reports: 0,
+          events: 0,
+          users: 0,
+          institutions: 0,
+          beneficiaries: 0,
+        });
       }
       setLoading(false);
     }
@@ -86,7 +93,7 @@ export default function AnimatedStats() {
   if (loading) {
     return (
       <div className="flex justify-center items-center py-8">
-        <span className="text-muted-foreground" style={{ fontSize: 28 }}>
+        <span className="text-muted-foreground" style={{ fontSize: 24 }}>
           Loading stats...
         </span>
       </div>
@@ -99,15 +106,15 @@ export default function AnimatedStats() {
     { label: 'Reports', value: counts.reports, color: '#f59e42' },
     { label: 'Events', value: counts.events, color: '#b87333' },
     { label: 'Institutions', value: counts.institutions, color: '#7c482b' },
+    { label: 'Beneficiaries', value: counts.beneficiaries, color: '#059669' },
   ];
-  // #eab308 #059669
   if (showUsers) {
     stats.push({ label: 'Users', value: counts.users, color: '#2563eb' });
   }
 
   return (
     <div className="w-full">
-      <div className="flex w-full gap-6 overflow-x-auto overflow-y-visible justify-center">
+      <div className="flex w-full gap-5 overflow-x-auto overflow-y-visible justify-center">
         <style>{`
         @keyframes progressCircleDash {
           0% {
@@ -140,7 +147,7 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
       ref.current.textContent = '0';
       return;
     }
-    const duration = 1800 + Math.random() * 800; // milliseconds, larger to match bigger visuals
+    const duration = 1800 + Math.random() * 800;
     const startTimestamp = performance.now();
     function animate(now: number) {
       const progress = Math.min((now - startTimestamp) / duration, 1);
@@ -156,22 +163,37 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
 
   return (
     <div
-      className={cardHoverClass}
+      className={
+        cardHoverClass + ' flex flex-col items-center justify-center' // center everything in the card
+      }
       style={{
-        borderTop: `8px solid ${stat.color || '#7c3aed'}`,
+        borderTop: `7px solid ${stat.color || '#7c3aed'}`,
         minWidth: CARD_MIN_WIDTH,
-        padding: `${CARD_PADDING_Y}px ${CARD_PADDING_X}px`, height: 'auto',marginBottom: '25px',
+        padding: `${CARD_PADDING_Y}px ${CARD_PADDING_X}px`,
+        height: 'auto',
+        marginBottom: '16px',
       }}
     >
       <div
-        className="relative flex items-center justify-center mb-2"
-        style={{ width: SVG_SIZE, height: SVG_SIZE }}
+        className="flex items-center justify-center relative mb-2"
+        style={{
+          width: SVG_SIZE,
+          height: SVG_SIZE,
+          margin: '0 auto',
+        }}
       >
         {/* Animated SVG Circle */}
         <svg
           width={SVG_SIZE}
           height={SVG_SIZE}
-          style={{ position: 'absolute', left: 0, top: 0, zIndex: 0 }}
+          style={{
+            position: 'absolute',
+            left: 0,
+            top: 0,
+            zIndex: 0,
+            display: 'block',
+            margin: '0 auto',
+          }}
         >
           <circle
             cx={SVG_SIZE / 2}
@@ -203,21 +225,22 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
         {/* The animated number */}
         <span
           ref={ref}
+          className="flex items-center justify-center"
           style={{
             color: stat.color || '#7c3aed',
             position: 'relative',
             zIndex: 1,
             width: SVG_SIZE,
             height: SVG_SIZE,
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'center',
             fontVariantNumeric: 'tabular-nums',
             letterSpacing: '-0.02em',
             userSelect: 'none',
             fontSize: FONT_SIZE,
             fontWeight: 800,
             textAlign: 'center',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
           }}
         >
           0
@@ -226,7 +249,7 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
       <span
         style={{
           fontSize: STAT_LABEL_FONT_SIZE,
-          marginTop: 10,
+          marginTop: 6,
           textTransform: 'uppercase',
           letterSpacing: '0.06em',
           color: '#6b7280',
@@ -239,3 +262,6 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
     </div>
   );
 }
+// This component displays animated stats cards with a progress circle animation.
+// It fetches counts for projects, reports, events, users, institutions, and beneficiaries from the API.
+// Each card shows a circular progress animation with the count value in the center.

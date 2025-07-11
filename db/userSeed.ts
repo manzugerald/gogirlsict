@@ -4,13 +4,13 @@ import bcrypt from 'bcrypt'
 const prisma = new PrismaClient()
 
 async function main() {
-  const hashedPassword = await bcrypt.hash('password123', 10)
+  const hashedPassword = await bcrypt.hash('123', 10)
 
   await prisma.user.create({
     data: {
-      firstName: 'Test',
-      lastName: 'User',
-      username: 'testuser',
+      firstName: 'Admin',
+      lastName: 'Super',
+      username: 'admin',
       email: 'test@example.com',
       password: hashedPassword,
       image: "/assets/images/users/evayayi.jpg"

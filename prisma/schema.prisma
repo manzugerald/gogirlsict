@@ -276,3 +276,18 @@ model Beneficiary {
   updatedBy                 User?          @relation("BeneficiaryUpdatedBy", fields: [updatedById], references: [id])
   approvedBy                User?          @relation("BeneficiaryApprovedBy", fields: [approvedById], references: [id])
 }
+
+// #Facebook Posts
+model FacebookPost {
+  id            String   @id            // Facebook post ID
+  message       String?
+  createdTime   DateTime
+  permalinkUrl  String
+  fullPicture   String
+  fetchedAt     DateTime @default(now())
+}
+
+model FacebookCacheMeta {
+  id          Int      @id @default(1)
+  lastFetched DateTime
+}

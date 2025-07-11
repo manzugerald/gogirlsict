@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { usePathname } from 'next/navigation';
 import { Pie } from 'react-chartjs-2';
-import { Card, CardContent } from '@/components/ui/card';
+import { CardContent } from '@/components/ui/card';
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -28,6 +28,7 @@ type CountData = {
   events: number;
   users: number;
   institutions: number;
+  beneficiaries: number;
 };
 
 const ANIMATION_DURATION = 4.2;
@@ -42,6 +43,7 @@ export default function DashboardChart() {
     events: 0,
     users: 0,
     institutions: 0,
+    beneficiaries: 0,
   });
   const [loading, setLoading] = useState(true);
 
@@ -49,19 +51,22 @@ export default function DashboardChart() {
     async function fetchCounts() {
       setLoading(true);
       try {
-        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes] = await Promise.all([
-          fetch('/api/projects'),
-          fetch('/api/reports'),
-          fetch('/api/events'),
-          fetch('/api/users'),
-          fetch('/api/institutions'),
-        ]);
-        const [projects, reports, events, users, institutions] = await Promise.all([
+        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes, beneficiariesRes] =
+          await Promise.all([
+            fetch('/api/projects'),
+            fetch('/api/reports'),
+            fetch('/api/events'),
+            fetch('/api/users'),
+            fetch('/api/institutions'),
+            fetch('/api/beneficiaries'),
+          ]);
+        const [projects, reports, events, users, institutions, beneficiaries] = await Promise.all([
           projectsRes.json(),
           reportsRes.json(),
           eventsRes.json(),
           usersRes.json(),
           institutionsRes.json(),
+          beneficiariesRes.json(),
         ]);
         setCounts({
           projects: Array.isArray(projects) ? projects.length : projects.count ?? 0,
@@ -69,9 +74,19 @@ export default function DashboardChart() {
           events: Array.isArray(events) ? events.length : events.count ?? 0,
           users: Array.isArray(users) ? users.length : users.count ?? 0,
           institutions: Array.isArray(institutions) ? institutions.length : institutions.count ?? 0,
+          beneficiaries: Array.isArray(beneficiaries)
+            ? beneficiaries.length
+            : beneficiaries.count ?? 0,
         });
       } catch (err) {
-        setCounts({ projects: 0, reports: 0, events: 0, users: 0, institutions: 0 });
+        setCounts({
+          projects: 0,
+          reports: 0,
+          events: 0,
+          users: 0,
+          institutions: 0,
+          beneficiaries: 0,
+        });
       }
       setLoading(false);
     }
@@ -85,20 +100,24 @@ export default function DashboardChart() {
     return () => clearInterval(interval);
   }, []);
 
-  // Labels and values, now including Institutions
-  const labels = ['Projects', 'Reports', 'Events', 'Institutions'].concat(isAdmin ? ['Users'] : []);
+  // Updated: Labels, values, and colors to include Institutions and Beneficiaries, and match animatedStats.tsx
+  const labels = ['Projects', 'Reports', 'Events', 'Institutions', 'Beneficiaries'].concat(
+    isAdmin ? ['Users'] : []
+  );
   const dataValues = [
     counts.projects,
     counts.reports,
     counts.events,
     counts.institutions,
+    counts.beneficiaries,
     ...(isAdmin ? [counts.users] : []),
   ];
   const backgroundColors = [
     '#7c3aed', // Projects
     '#f59e42', // Reports
     '#059669', // Events
-    '#eab308', // Institutions (yellow)
+    '#7c482b', // Institutions (brown, matches animatedStats)
+    '#eab308', // Beneficiaries (yellow, matches animatedStats)
     ...(isAdmin ? ['#2563eb'] : []), // Users (blue)
   ];
   const total = dataValues.reduce((a, b) => a + b, 0);
@@ -107,7 +126,7 @@ export default function DashboardChart() {
     labels,
     datasets: [
       {
-        data: total > 0 ? dataValues : [1, 1, 1, 1, 1].slice(0, labels.length),
+        data: total > 0 ? dataValues : [1, 1, 1, 1, 1, 1].slice(0, labels.length),
         backgroundColor: backgroundColors,
         borderWidth: 1,
       },
@@ -182,24 +201,16 @@ export default function DashboardChart() {
             <div className="text-center text-muted-foreground">Loading...</div>
           ) : (
             <div className="flex flex-col gap-6">
-              {/* Title */}
-              {/* <div className="text-center font-semibold text-base">
-                {isAdmin
-                  ? 'Projects, Reports, Events, Institutions, and Users by numbers'
-                  : 'Our Projects, Events, Reports, and Institutions by numbers'}
-              </div> */}
-
               {/* Charts Row */}
               <div className="flex flex-col md:flex-row gap-6 p-4">
                 {/* Animated Piece Bar Chart */}
                 <div className={`${cardHoverClass} w-full md:w-7/12`}>
                   <AnimatedPieceBarChart
                     values={dataValues}
-                    values={dataValues}
                     labels={labels}
                     colors={backgroundColors}
-                    animationDuration={1600} // ms, optional
-                    loopPause={1000} //optional
+                    animationDuration={1600}
+                    loopPause={1000}
                   />
                 </div>
 
@@ -232,5 +243,5 @@ export default function DashboardChart() {
     </div>
   );
 }
-// This component displays a dashboard chart with animated stats, a pie chart, and a segmented bar chart.
-// It fetches data from APIs, calculates totals, and displays them in a visually appealing way.
+// Note: This component is designed to be used in a Next.js app with server-side rendering.
+// It fetches data from the API and displays animated stats cards with a progress circle animation.
