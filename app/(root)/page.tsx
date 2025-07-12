@@ -8,6 +8,7 @@ import FacebookFeed from '@/components/shared/facebook/facebookFeed';
 import AnimatedStats from '../(admin)/admin/dashboard/chart/animatedStats';
 import HeroVideo from '@/components/shared/heroVideo/heroVideo';
 import FacebookPostsCard from '@/components/shared/facebookPostsCard/facebookPostsCard';
+import ReportsSection from './resources/reports/reportsSection';
 
 // export const metadata = {
 //   title: 'Home',
@@ -69,12 +70,14 @@ export default async function HomePage() {
           </h2>
           <DashboardChart />
         </div>
-        <div className="flex flex-col md:flex gap-4 p-8">
-          <h2 className="text-2xl font-bold text-center mb-2 text-gray-800 dark:text-gray-100 transition-colors duration-300 pb-4">
+        <div className="flex flex-col md:flex gap-4 p-2">
+          {/* <h2 className="text-2xl font-bold text-center mb-2 text-gray-800 dark:text-gray-100 transition-colors duration-300 p-0">
             Our Latest Facebook Feed
-          </h2>
+          </h2> */}
           <FacebookPostsCard />
         </div>
+
+        <ReportsSection />
       </div>
     </>
   );

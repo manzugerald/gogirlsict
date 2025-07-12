@@ -5,6 +5,10 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { redis } from '@/utils/redis'; // Import Redis client
+
+const CACHE_KEY = 'beneficiaries:all';
+const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days in seconds
 
 // Helper to save uploaded image files and return resulting filenames
 async function saveFiles(formData: FormData, field: string, destDir: string): Promise<string[]> {
@@ -28,6 +32,14 @@ async function saveFiles(formData: FormData, field: string, destDir: string): Pr
 // GET: Fetch all beneficiaries (no auth required)
 export async function GET() {
   try {
+    // 1. Try Redis cache first
+    const cached = await redis.get(CACHE_KEY);
+    if (cached) {
+      // Optionally log: console.log("Returning beneficiaries from cache");
+      return NextResponse.json(JSON.parse(cached));
+    }
+
+    // 2. Not cached: fetch from DB
     const beneficiaries = await prisma.beneficiary.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
@@ -49,6 +61,10 @@ export async function GET() {
         },
       },
     });
+
+    // 3. Cache the result
+    await redis.set(CACHE_KEY, JSON.stringify(beneficiaries), 'EX', CACHE_TTL);
+
     return NextResponse.json(beneficiaries);
   } catch (err) {
     console.error('Error fetching beneficiaries:', err);
@@ -146,6 +162,9 @@ export async function POST(req: Request) {
         },
       },
     });
+
+    // Invalidate cache after write
+    await redis.del(CACHE_KEY);
 
     return NextResponse.json(beneficiary);
   } catch (error) {

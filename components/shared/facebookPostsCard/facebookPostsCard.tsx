@@ -92,11 +92,11 @@ export default function FacebookPostsCard() {
 
   return (
     <div className="w-full max-w-6xl mx-auto my-10 px-2">
-      {/* <div className="flex justify-center">
+      <div className="flex justify-center">
         <h2 className="text-3xl font-extrabold mb-8 text-center drop-shadow-md dark:text-white">
-          Latest Facebook Posts
+          Latest Facebook Feed
         </h2>
-      </div> */}
+      </div>
       {loading ? (
         <div className="flex justify-center items-center py-2">
           <span className="text-muted-foreground text-xl">Loading...</span>

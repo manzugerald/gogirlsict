@@ -5,6 +5,10 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { redis } from '@/utils/redis'; // Import Redis client
+
+const ALL_BENEFICIARIES_CACHE_KEY = 'beneficiaries:all';
+const SINGLE_BENEFICIARY_CACHE_PREFIX = 'beneficiaries:'; // Use as beneficiaries:[id]
 
 // Helper to save uploaded images (profile/message)
 async function saveBeneficiaryFiles(
@@ -32,6 +36,13 @@ async function saveBeneficiaryFiles(
 // GET: Fetch single beneficiary details
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    // Try Redis cache first
+    const singleCacheKey = SINGLE_BENEFICIARY_CACHE_PREFIX + params.id;
+    const cached = await redis.get(singleCacheKey);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
     const beneficiary = await prisma.beneficiary.findUnique({
       where: { id: params.id },
       include: {
@@ -45,6 +56,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!beneficiary) {
       return NextResponse.json({ error: 'Beneficiary not found' }, { status: 404 });
     }
+
+    // Cache result for this beneficiary for 7 days
+    await redis.set(singleCacheKey, JSON.stringify(beneficiary), 'EX', 60 * 60 * 24 * 7);
 
     return NextResponse.json(beneficiary);
   } catch (error) {
@@ -178,6 +192,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     });
 
+    // Invalidate single cache and all list cache
+    await Promise.all([
+      redis.del(SINGLE_BENEFICIARY_CACHE_PREFIX + params.id),
+      redis.del(ALL_BENEFICIARIES_CACHE_KEY),
+    ]);
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Failed to update beneficiary:', error);
@@ -191,6 +211,12 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
     const deleted = await prisma.beneficiary.delete({
       where: { id: params.id },
     });
+
+    // Invalidate single cache and all list cache
+    await Promise.all([
+      redis.del(SINGLE_BENEFICIARY_CACHE_PREFIX + params.id),
+      redis.del(ALL_BENEFICIARIES_CACHE_KEY),
+    ]);
 
     return NextResponse.json({ message: 'Beneficiary deleted', beneficiary: deleted });
   } catch (error: any) {

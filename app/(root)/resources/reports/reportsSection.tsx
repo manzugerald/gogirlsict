@@ -6,23 +6,30 @@ import { ReportList } from '@/components/resources';
 import ReportDetails, { ReportCardProps } from './components/reportDetails';
 
 interface ReportsSectionProps {
-  setReportUploader: (uploader: string | null) => void;
-  setReportUploaderImage: (image: string | null) => void;
+  setReportUploader?: (uploader: string | null) => void;
+  setReportUploaderImage?: (image: string | null) => void;
+  reports?: ReportCardProps[];
 }
 
 const ReportsSection: React.FC<ReportsSectionProps> = ({
   setReportUploader,
   setReportUploaderImage,
+  reports: propReports,
 }) => {
   const searchParams = useSearchParams();
   const router = useRouter();
   const reportIdParam = searchParams.get('report');
   const reportId = reportIdParam ? Number(reportIdParam) : null;
 
-  const [reports, setReports] = useState<ReportCardProps[]>([]);
+  const [reports, setReports] = useState<ReportCardProps[]>(propReports || []);
   const [selectedReport, setSelectedReport] = useState<ReportCardProps | null>(null);
 
+  // Fetch only if propReports is not provided
   useEffect(() => {
+    if (propReports && propReports.length > 0) {
+      setReports(propReports);
+      return;
+    }
     fetch('/api/reports')
       .then((res) => res.json())
       .then((data) => {
@@ -56,21 +63,21 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({
                 .filter(Boolean)
                 .join(' ');
             }
-            setReportUploader(uploader || null);
-            setReportUploaderImage(found.createdBy?.image || null);
+            setReportUploader?.(uploader || null);
+            setReportUploaderImage?.(found.createdBy?.image || null);
           } else {
-            setReportUploader(null);
-            setReportUploaderImage(null);
+            setReportUploader?.(null);
+            setReportUploaderImage?.(null);
           }
         } else {
           setSelectedReport(null);
-          setReportUploader(null);
-          setReportUploaderImage(null);
+          setReportUploader?.(null);
+          setReportUploaderImage?.(null);
         }
       })
       .catch((err) => console.error('Failed to fetch reports:', err));
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [reportId]);
+  }, [reportId, propReports]);
 
   const handleReportSelect = async (id: number) => {
     const found = reports.find((r) => r.id === id);
@@ -92,22 +99,21 @@ const ReportsSection: React.FC<ReportsSectionProps> = ({
     if (found.createdBy) {
       uploader = [found.createdBy.firstName, found.createdBy.lastName].filter(Boolean).join(' ');
     }
-    setReportUploader(uploader || null);
-    setReportUploaderImage(found.createdBy?.image || null);
+    setReportUploader?.(uploader || null);
+    setReportUploaderImage?.(found.createdBy?.image || null);
 
-    // Only set the title in the URL
+    // Only set the title in the URL; update to /resources/reports?report=...&reportTitle=...
     const params = new URLSearchParams();
-    params.set('type', 'reports');
     params.set('report', id.toString());
     params.set('reportTitle', found.title || '');
-    router.push(`/resources?${params.toString()}`);
+    router.push(`/resources/reports?${params.toString()}`);
   };
 
   const handleBack = () => {
     setSelectedReport(null);
-    setReportUploader(null);
-    setReportUploaderImage(null);
-    router.push(`/resources?type=reports`);
+    setReportUploader?.(null);
+    setReportUploaderImage?.(null);
+    router.push(`/resources/reports`);
   };
 
   return (

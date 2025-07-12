@@ -1,26 +1,29 @@
 'use client';
 
-import React, { useState } from 'react';
-import { useSearchParams } from 'next/navigation';
+import { useParams, useSearchParams } from 'next/navigation';
 import ProjectHero from '@/components/shared/header/project-header';
-import VideosSection from './videos/videosSection';
-import ReportsSection from './reports/reportsSection';
+import VideosSection from '../videos/videosSection';
+import ReportsSection from '../reports/reportsSection';
+import React, { useState } from 'react';
 
-type SectionType = 'videos' | 'reports';
-const SECTION_LABELS: Record<SectionType, string> = {
+const SECTION_LABELS: Record<string, string> = {
   videos: 'GoGirls ICT Videos',
-  reports: 'GoGirls ICT Reports'
+  reports: 'GoGirls ICT Reports',
 };
 
-export default function ResourcesPage() {
-  const searchParams = useSearchParams();
-  const currentType = (searchParams.get('type')?.toLowerCase() as SectionType) || 'videos';
+export default function ResourcesSectionPage() {
+  // Use the dynamic segment from the URL
+  const params = useParams();
+  const section = Array.isArray(params.section) ? params.section[0] : params.section || 'videos';
 
-  // State to hold uploader info (Option 1)
+  const currentType = section.toLowerCase();
+
+  // State to hold uploader info (for reports)
   const [reportUploader, setReportUploader] = useState<string | null>(null);
   const [reportUploaderImage, setReportUploaderImage] = useState<string | null>(null);
 
-  // Pull report title from search param (if available)
+  // Optionally, get search params for report title
+  const searchParams = useSearchParams();
   const reportTitle = searchParams.get('reportTitle');
 
   // Compose catalogue label for reports
@@ -42,9 +45,7 @@ export default function ResourcesPage() {
           {reportTitle && reportUploader && (
             <div className="mt-1 flex items-center gap-2text-base text-black">
               <span>Uploaded By:</span>
-              <span className="font-medium">
-                {reportUploader}
-              </span>
+              <span className="font-medium">{reportUploader}</span>
               {reportUploaderImage && (
                 <img
                   src={reportUploaderImage}
@@ -57,7 +58,6 @@ export default function ResourcesPage() {
           )}
         </div>
       )}
-
       <main className="p-1 wrapper">
         <div
           className="max-w-7xl w-full mx-auto px-4 md:px-2 lg:px-2"

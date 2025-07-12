@@ -5,6 +5,11 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { redis } from '@/utils/redis';
+
+const INSTITUTIONS_ALL_CACHE_KEY = 'institutions:all';
+const SINGLE_INSTITUTION_CACHE_PREFIX = 'institutions:'; // institutions:[id]
+const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
 // Helper to save uploaded images
 async function saveInstitutionFiles(formData: FormData, destDir: string): Promise<string[]> {
@@ -37,9 +42,15 @@ async function saveLogoFile(logoFile: File, destDir: string): Promise<string | n
   return `/uploads/institutions/${filename}`;
 }
 
-// GET = fetch institution details
+// GET = fetch institution details (with Redis cache)
 export async function GET(req: Request, { params }: { params: { id: string } }) {
   try {
+    const singleCacheKey = SINGLE_INSTITUTION_CACHE_PREFIX + params.id;
+    const cached = await redis.get(singleCacheKey);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
     const institution = await prisma.institution.findUnique({
       where: { id: params.id },
       include: {
@@ -55,6 +66,9 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
       return NextResponse.json({ error: 'Institution not found' }, { status: 404 });
     }
 
+    // Cache this institution for 7 days
+    await redis.set(singleCacheKey, JSON.stringify(institution), 'EX', CACHE_TTL);
+
     return NextResponse.json(institution);
   } catch (error) {
     console.error('Failed to fetch institution:', error);
@@ -62,7 +76,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-// PATCH = update institution (support new logo upload)
+// PATCH = update institution (support new logo upload, invalidate caches)
 export async function PATCH(req: Request, { params }: { params: { id: string } }) {
   try {
     const session = await getServerSession(authOptions);
@@ -145,6 +159,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
       },
     });
 
+    // Invalidate both single and all-institutions cache
+    await Promise.all([
+      redis.del(SINGLE_INSTITUTION_CACHE_PREFIX + params.id),
+      redis.del(INSTITUTIONS_ALL_CACHE_KEY),
+    ]);
+
     return NextResponse.json(updated);
   } catch (error) {
     console.error('Failed to update institution:', error);
@@ -152,12 +172,18 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-// DELETE = delete institution
+// DELETE = delete institution (invalidate caches)
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
   try {
     const deleted = await prisma.institution.delete({
       where: { id: params.id },
     });
+
+    // Invalidate both single and all-institutions cache
+    await Promise.all([
+      redis.del(SINGLE_INSTITUTION_CACHE_PREFIX + params.id),
+      redis.del(INSTITUTIONS_ALL_CACHE_KEY),
+    ]);
 
     return NextResponse.json({ message: 'Institution deleted', institution: deleted });
   } catch (error: any) {

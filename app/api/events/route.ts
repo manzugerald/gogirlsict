@@ -1,11 +1,22 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/db/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/db/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { redis } from '@/utils/redis';
+
+const EVENTS_CACHE_KEY = 'events:all';
+const EVENTS_CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
 // Handle GET (fetch all events, no auth required)
 export async function GET() {
   try {
+    // 1. Try Redis cache first
+    const cached = await redis.get(EVENTS_CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
+    // 2. Not cached: fetch from DB
     const events = await prisma.event.findMany({
       orderBy: { createdAt: 'desc' },
       select: {
@@ -33,10 +44,14 @@ export async function GET() {
         report: { select: { title: true, id: true } },
       },
     });
+
+    // 3. Cache the result
+    await redis.set(EVENTS_CACHE_KEY, JSON.stringify(events), 'EX', EVENTS_CACHE_TTL);
+
     return NextResponse.json(events);
   } catch (err) {
-    console.error("Error fetching events:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error('Error fetching events:', err);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -46,7 +61,7 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
 
     const data = await req.json();
@@ -80,7 +95,7 @@ export async function POST(req: Request) {
       !eventStartDate ||
       !eventEndDate
     ) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const userId = session.user.id;
@@ -109,9 +124,12 @@ export async function POST(req: Request) {
       },
     });
 
+    // Invalidate cache after write
+    await redis.del(EVENTS_CACHE_KEY);
+
     return NextResponse.json(event);
   } catch (error) {
-    console.error("Failed to create event:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error('Failed to create event:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

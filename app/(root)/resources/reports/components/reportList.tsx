@@ -5,8 +5,10 @@ import { Card } from '@/components/ui/card';
 import { Document, Page, pdfjs } from 'react-pdf';
 import Pagination from '../../../../../components/shared/pagination';
 import { ReportCardProps } from './ReportDetails';
+import { cardHoverClass } from '@/utils/styles/card-hover';
+import clsx from 'clsx';
 
-// Set worker src for PDF.js
+// Configure PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = `//cdnjs.cloudflare.com/ajax/libs/pdf.js/${pdfjs.version}/pdf.worker.mjs`;
 
 interface ReportListProps {
@@ -17,6 +19,16 @@ interface ReportListProps {
 }
 
 const DEFAULT_PAGE_SIZE = 8;
+
+function formatDate(date: string | Date) {
+  if (!date) return '';
+  const d = typeof date === 'string' ? new Date(date) : date;
+  return d.toLocaleDateString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: 'numeric',
+  });
+}
 
 const ReportList = ({
   reports,
@@ -31,28 +43,24 @@ const ReportList = ({
 
   return (
     <div className="w-full">
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-10 gap-y-2">
+      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-10 gap-y-6">
         {paginatedReports.map((report, index) => {
           const isActive = activeId !== undefined && report.id === activeId;
+
           return (
             <Card
               key={report.id ?? index}
               onClick={() => !isActive && onSelect(report.id)}
               tabIndex={0}
-              className={`
-                group overflow-hidden flex flex-col justify-between rounded-2xl transition-all relative w-full px-6 
-                border bg-card/90 dark:bg-card/70 border-border
-                shadow-lg hover:shadow-2xl focus:shadow-2xl
-                hover:-translate-y-2 focus:-translate-y-2
-                hover:scale-[1.025] focus:scale-[1.025]
-                duration-300 ease-[cubic-bezier(.4,0,.2,1)]
-                outline-none
-                ${isActive ? 'ring-2 ring-primary ring-offset-2' : ''}
-                cursor-pointer
-              `}
-              style={{ minHeight: 200 }}
+              className={clsx(
+                'group flex flex-col justify-start w-full outline-none px-0 pt-4 pb-0',
+                cardHoverClass,
+                isActive && 'ring-2 ring-primary ring-offset-2'
+              )}
+              style={{ minHeight: 370, position: 'relative' }}
             >
-              <div className="relative w-full h-[120px] bg-muted flex items-center justify-center rounded-xl mb-4">
+              {/* PDF Preview */}
+              <div className="relative w-full max-w-[240px] mx-auto h-[280px] bg-muted flex items-center justify-center rounded-t-xl overflow-hidden">
                 {report.files?.[0] && report.files[0].endsWith('.pdf') ? (
                   <Document
                     file={report.files[0]}
@@ -63,7 +71,7 @@ const ReportList = ({
                     <Page
                       pageNumber={1}
                       width={240}
-                      height={100}
+                      height={280}
                       renderTextLayer={false}
                       renderAnnotationLayer={false}
                     />
@@ -73,6 +81,7 @@ const ReportList = ({
                     No preview
                   </div>
                 )}
+
                 {/* Active overlay */}
                 {isActive && (
                   <div className="absolute inset-0 bg-primary/40 z-20 flex items-center justify-center pointer-events-none rounded-2xl">
@@ -80,22 +89,24 @@ const ReportList = ({
                   </div>
                 )}
               </div>
-              <div className="flex-1 flex flex-col justify-end">
-                <div className="flex items-end min-h-[3.5rem]">
-                  <span
-                    className="w-full text-base font-semibold truncate block text-center px-2 py-1
-                      bg-transparent text-foreground"
-                    title={report.title}
-                  >
-                    {report.title}
-                  </span>
+
+              {/* Title & Date Overlay - always fills till the bottom and is vertically centered */}
+              <div
+                className="flex-1 flex flex-col justify-center items-center w-full 
+                bg-black/80 dark:bg-black/60 backdrop-blur-sm text-white text-center px-4 py-3 rounded-b-xl min-h-[90px]"
+              >
+                <div className="text-sm font-semibold leading-snug line-clamp-2">
+                  {report.title}
+                </div>
+                <div className="text-xs mt-1">
+                  {report.createdAt ? formatDate(report.createdAt) : ''}
                 </div>
               </div>
             </Card>
           );
         })}
       </div>
-      {/* Pagination */}
+
       {totalPages > 1 && (
         <Pagination
           currentPage={currentPage}

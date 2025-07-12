@@ -26,6 +26,7 @@ export default function TiptapJsonViewer({ content, className = "" }: Props) {
   const editor = useEditor({
     content,
     editable: false,
+    immediatelyRender: false,
     extensions: [
       TextStyle,
       Color,
@@ -36,16 +37,16 @@ export default function TiptapJsonViewer({ content, className = "" }: Props) {
         autolink: true,
         linkOnPaste: true,
         HTMLAttributes: {
-          rel: "noopener noreferrer",
-          target: "_blank",
-          class: "underline text-blue-600 hover:text-blue-800 visited:text-purple-600",
+          rel: 'noopener noreferrer',
+          target: '_blank',
+          class: 'underline text-blue-600 hover:text-blue-800 visited:text-purple-600',
         },
       }),
       Image.extend({
         addAttributes() {
           return {
             ...this.parent?.(),
-            width: { default: "auto" },
+            width: { default: 'auto' },
             float: { default: null },
           };
         },

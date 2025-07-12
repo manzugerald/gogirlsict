@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev",
-    "build": "next build",
+    "build": "prisma generate && next build",
     "start": "next start",
     "lint": "next lint",
     "postinstall": "prisma generate",
@@ -45,6 +45,7 @@
     "dayjs": "^1.11.13",
     "framer-motion": "^12.19.2",
     "highlight.js": "^11.11.1",
+    "ioredis": "^5.6.1",
     "lightgallery": "^2.8.3",
     "lucide-react": "^0.511.0",
     "mapbox-gl": "^3.13.0",
@@ -69,6 +70,7 @@
     "rehype-highlight": "^7.0.2",
     "remark-gfm": "^4.0.1",
     "swiper": "^11.2.8",
+    "swr": "^2.3.4",
     "tailwind-merge": "^3.3.0"
   },
   "devDependencies": {

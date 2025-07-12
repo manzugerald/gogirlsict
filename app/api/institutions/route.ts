@@ -5,6 +5,10 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { v4 as uuidv4 } from 'uuid';
 import { promises as fs } from 'fs';
 import path from 'path';
+import { redis } from '@/utils/redis';
+
+const INSTITUTIONS_CACHE_KEY = 'institutions:all';
+const INSTITUTIONS_CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
 // Helper to save uploaded institution images
 async function saveInstitutionFiles(formData: FormData, destDir: string): Promise<string[]> {
@@ -40,6 +44,12 @@ async function saveLogoFile(logoFile: File, destDir: string): Promise<string | n
 // GET: Fetch all institutions (no auth required)
 export async function GET() {
   try {
+    // Try Redis cache first
+    const cached = await redis.get(INSTITUTIONS_CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
     const institutions = await prisma.institution.findMany({
       orderBy: { createdAt: 'desc' },
       include: {
@@ -49,7 +59,7 @@ export async function GET() {
             firstName: true,
             lastName: true,
             image: true,
-          }
+          },
         },
         approvedBy: { select: { username: true } },
         updatedBy: { select: { username: true } },
@@ -57,6 +67,15 @@ export async function GET() {
         beneficiaries: true,
       },
     });
+
+    // Cache the result
+    await redis.set(
+      INSTITUTIONS_CACHE_KEY,
+      JSON.stringify(institutions),
+      'EX',
+      INSTITUTIONS_CACHE_TTL
+    );
+
     return NextResponse.json(institutions);
   } catch (err) {
     console.error('Error fetching institutions:', err);
@@ -151,6 +170,9 @@ export async function POST(req: Request) {
         locations: true,
       },
     });
+
+    // Invalidate institutions cache after write
+    await redis.del(INSTITUTIONS_CACHE_KEY);
 
     return NextResponse.json(institution);
   } catch (error) {

@@ -2,6 +2,10 @@ import { NextResponse } from 'next/server';
 import fs from 'fs';
 import path from 'path';
 import { prisma } from '@/db/prisma';
+import { redis } from '@/utils/redis';
+
+const FILE_STATS_CACHE_KEY = 'file-stats:all';
+const FILE_STATS_CACHE_TTL = 60 * 60 * 24; // 24 hours in seconds
 
 // Strict match: only check if exact filename exists in the target folder
 function getExactFileSize(dir: string, filename: string): number {
@@ -18,6 +22,12 @@ function getFilenameFromPath(filepath: string): string {
 }
 
 export async function GET() {
+  // Try Redis cache first
+  const cached = await redis.get(FILE_STATS_CACHE_KEY);
+  if (cached) {
+    return NextResponse.json(JSON.parse(cached));
+  }
+
   const projects = await prisma.project.findMany();
   const reports = await prisma.report.findMany();
   const events = await prisma.event.findMany();
@@ -140,7 +150,7 @@ export async function GET() {
     // If you ever add institution PDFs, add similar logic here
   }
 
-  return NextResponse.json({
+  const result = {
     counts: {
       'Project Images': projectImageCount,
       'Project PDFs': 0, // Modify if you add project PDFs
@@ -159,5 +169,10 @@ export async function GET() {
       'Report PDFs': reportPDFSize,
       'Institution Images': institutionImageSize,
     },
-  });
+  };
+
+  // Cache result in Redis
+  await redis.set(FILE_STATS_CACHE_KEY, JSON.stringify(result), 'EX', FILE_STATS_CACHE_TTL);
+
+  return NextResponse.json(result);
 }

@@ -5,6 +5,16 @@ import { authOptions } from '@/app/api/auth/[...nextauth]/route';
 import { EventStatus, PublishStatus, AttendanceType } from '@/lib/generated/prisma';
 import { slugify } from '@/lib/utils';
 import { saveUploadedFile, saveUploadedFiles } from '@/lib/uploadHelpers';
+import { redis } from '@/utils/redis';
+
+const EVENTS_CACHE_KEY = 'events:all';
+const SINGLE_EVENT_CACHE_PREFIX = 'events:'; // e.g. events:123
+const CACHE_TTL = 60 * 60 * 24 * 7; // 7 days in seconds
+
+// Helper function, place near the top of the file:
+function toEnum<T>(enumObject: T, value: string): T[keyof T] | undefined {
+  return (enumObject as any)[value];
+}
 
 // GET /api/events/[id] - Get single event by ID
 export async function GET(req: Request, { params }: { params: { id: string } }) {
@@ -13,6 +23,13 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (isNaN(id)) {
       return NextResponse.json({ error: 'Invalid ID' }, { status: 400 });
     }
+    // Try Redis cache for this event
+    const singleEventCacheKey = SINGLE_EVENT_CACHE_PREFIX + id;
+    const cached = await redis.get(singleEventCacheKey);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
     const event = await prisma.event.findUnique({
       where: { id },
       select: {
@@ -44,16 +61,14 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     if (!event) {
       return NextResponse.json({ error: 'Event not found' }, { status: 404 });
     }
+    // Cache the event for 7 days
+    await redis.set(singleEventCacheKey, JSON.stringify(event), 'EX', CACHE_TTL);
+
     return NextResponse.json(event);
   } catch (err) {
     console.error('Error fetching event:', err);
     return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
-}
-
-// Helper function, place near the top of the file:
-function toEnum<T>(enumObject: T, value: string): T[keyof T] | undefined {
-  return (enumObject as any)[value];
 }
 
 // PUT /api/events/[id] - Replace/update an event (all fields required)
@@ -211,6 +226,12 @@ export async function PUT(req: NextRequest, context: { params: Promise<{ id: str
       },
     });
 
+    // Invalidate single and all-events cache
+    await Promise.all([
+      redis.del(SINGLE_EVENT_CACHE_PREFIX + eventId),
+      redis.del(EVENTS_CACHE_KEY),
+    ]);
+
     return NextResponse.json(updatedEvent);
   } catch (error) {
     console.error('Failed to update event:', error);
@@ -232,6 +253,9 @@ export async function DELETE(req: NextRequest, context: { params: { id: string }
     }
 
     await prisma.event.delete({ where: { id } });
+
+    // Invalidate single and all-events cache
+    await Promise.all([redis.del(SINGLE_EVENT_CACHE_PREFIX + id), redis.del(EVENTS_CACHE_KEY)]);
 
     return NextResponse.json({ success: true });
   } catch (error) {

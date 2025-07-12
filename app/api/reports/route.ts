@@ -1,31 +1,45 @@
-import { NextResponse } from "next/server";
-import { prisma } from "@/db/prisma";
-import { getServerSession } from "next-auth";
-import { authOptions } from "@/app/api/auth/[...nextauth]/route";
-import { slugify } from "@/lib/utils";
+import { NextResponse } from 'next/server';
+import { prisma } from '@/db/prisma';
+import { getServerSession } from 'next-auth';
+import { authOptions } from '@/app/api/auth/[...nextauth]/route';
+import { slugify } from '@/lib/utils';
+import { redis } from '@/utils/redis';
+
+const REPORTS_CACHE_KEY = 'reports:all';
+const REPORTS_CACHE_TTL = 60 * 60 * 24 * 7; // 7 days
 
 // Handle GET (fetch all reports) -- PUBLIC
 export async function GET() {
   try {
+    // Try Redis cache first
+    const cached = await redis.get(REPORTS_CACHE_KEY);
+    if (cached) {
+      return NextResponse.json(JSON.parse(cached));
+    }
+
     const reports = await prisma.report.findMany({
-      orderBy: { createdAt: "asc" },
+      orderBy: { createdAt: 'asc' },
       include: {
-        createdBy: { 
-          select: { 
-            firstName: true, 
-            lastName: true, 
-            image: true 
-          } 
+        createdBy: {
+          select: {
+            firstName: true,
+            lastName: true,
+            image: true,
+          },
         },
         approvedBy: { select: { firstName: true, lastName: true } },
         updatedBy: { select: { firstName: true, lastName: true } },
-        project: { select: { title: true, id: true } }
+        project: { select: { title: true, id: true } },
       },
     });
+
+    // Cache the result
+    await redis.set(REPORTS_CACHE_KEY, JSON.stringify(reports), 'EX', REPORTS_CACHE_TTL);
+
     return NextResponse.json(reports);
   } catch (err) {
-    console.error("Error fetching reports:", err);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error('Error fetching reports:', err);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }
 
@@ -35,14 +49,17 @@ export async function POST(req: Request) {
     const session = await getServerSession(authOptions);
 
     if (!session?.user?.id) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+      return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
     }
     const userId = session.user.id;
 
     // Check user existence
     const user = await prisma.user.findUnique({ where: { id: userId } });
     if (!user) {
-      return NextResponse.json({ error: "Authenticated user not found in database." }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Authenticated user not found in database.' },
+        { status: 400 }
+      );
     }
 
     const data = await req.json();
@@ -53,11 +70,11 @@ export async function POST(req: Request) {
       publishStatus,
       projectId,
       accessCount = 0,
-      downloadCount = 0
+      downloadCount = 0,
     } = data;
 
     if (!title) {
-      return NextResponse.json({ error: "Missing required fields" }, { status: 400 });
+      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
     const slug = slugify(title.trim());
@@ -77,9 +94,13 @@ export async function POST(req: Request) {
         projectId: projectId ?? null,
       },
     });
+
+    // Invalidate cache after write
+    await redis.del(REPORTS_CACHE_KEY);
+
     return NextResponse.json(report);
   } catch (error) {
-    console.error("Failed to create report:", error);
-    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 });
+    console.error('Failed to create report:', error);
+    return NextResponse.json({ error: 'Internal Server Error' }, { status: 500 });
   }
 }

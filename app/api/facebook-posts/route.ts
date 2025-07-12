@@ -1,12 +1,23 @@
 import { NextRequest } from 'next/server';
 import { PrismaClient } from '@/lib/generated/prisma';
 import dayjs from 'dayjs';
+import { redis } from '@/utils/redis';
 
 const prisma = new PrismaClient();
+
+const REDIS_CACHE_KEY = 'facebook-posts:all';
+const REDIS_CACHE_TTL = 60 * 60 * 24; // 24 hours in seconds
 
 export async function GET(req: NextRequest) {
   const PAGE_ID = process.env.FB_PAGE_ID!;
   const ACCESS_TOKEN = process.env.FB_PAGE_ACCESS_TOKEN!;
+
+  // Try Redis cache first
+  const redisCached = await redis.get(REDIS_CACHE_KEY);
+  if (redisCached) {
+    const cachedData = JSON.parse(redisCached);
+    return Response.json(cachedData);
+  }
 
   let meta = await prisma.facebookCacheMeta.findUnique({ where: { id: 1 } });
   let needsFetch = true;
@@ -15,7 +26,10 @@ export async function GET(req: NextRequest) {
 
   if (!needsFetch) {
     const posts = await prisma.facebookPost.findMany({ orderBy: { createdTime: 'desc' } });
-    return Response.json({ data: posts, lastFetched: meta?.lastFetched });
+    const result = { data: posts, lastFetched: meta?.lastFetched };
+    // cache in Redis
+    await redis.set(REDIS_CACHE_KEY, JSON.stringify(result), 'EX', REDIS_CACHE_TTL);
+    return Response.json(result);
   }
 
   const fbRes = await fetch(
@@ -62,7 +76,11 @@ export async function GET(req: NextRequest) {
   });
 
   const postsInDb = await prisma.facebookPost.findMany({ orderBy: { createdTime: 'desc' } });
+  const result = { data: postsInDb, lastFetched: new Date() };
   console.log('Posts in DB after insert:', postsInDb.length, postsInDb);
 
-  return Response.json({ data: postsInDb, lastFetched: new Date() });
+  // Update Redis cache
+  await redis.set(REDIS_CACHE_KEY, JSON.stringify(result), 'EX', REDIS_CACHE_TTL);
+
+  return Response.json(result);
 }

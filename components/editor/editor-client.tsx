@@ -45,6 +45,7 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
       // The key change: send Tiptap JSON, not HTML
       onChange(editor.getJSON());
     },
+    immediatelyRender: false,
     extensions: [
       TextStyle,
       Color,
@@ -55,49 +56,53 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
         autolink: true,
         linkOnPaste: true,
         HTMLAttributes: {
-          rel: "noopener noreferrer",
-          target: "_blank",
-          class: "underline text-blue-600 hover:text-blue-800 visited:text-purple-600",
+          rel: 'noopener noreferrer',
+          target: '_blank',
+          class: 'underline text-blue-600 hover:text-blue-800 visited:text-purple-600',
         },
       }),
       Image.extend({
         addAttributes() {
           return {
             ...this.parent?.(),
-            width: { default: "auto" },
+            width: { default: 'auto' },
             float: { default: null },
           };
         },
         addNodeView() {
           return ({ node, getPos, editor }) => {
-            const img = document.createElement("img");
+            const img = document.createElement('img');
             img.src = node.attrs.src;
-            img.style.width = node.attrs.width ?? "auto";
-            img.style.float = node.attrs.float ?? "";
-            img.className = "tiptap-img";
-            img.contentEditable = "false";
+            img.style.width = node.attrs.width ?? 'auto';
+            img.style.float = node.attrs.float ?? '';
+            img.className = 'tiptap-img';
+            img.contentEditable = 'false';
 
-            const wrapper = document.createElement("span");
-            wrapper.style.position = "relative";
-            wrapper.style.display = "inline-block";
+            const wrapper = document.createElement('span');
+            wrapper.style.position = 'relative';
+            wrapper.style.display = 'inline-block';
             wrapper.appendChild(img);
 
-            const btn = document.createElement("button");
-            btn.innerHTML = "×";
-            btn.className = "tiptap-img-delete";
+            const btn = document.createElement('button');
+            btn.innerHTML = '×';
+            btn.className = 'tiptap-img-delete';
             btn.onclick = (e) => {
               e.preventDefault();
               e.stopPropagation();
-              if (typeof getPos === "function") {
-                editor.chain().focus().deleteRange({ from: getPos(), to: getPos() + 1 }).run();
+              if (typeof getPos === 'function') {
+                editor
+                  .chain()
+                  .focus()
+                  .deleteRange({ from: getPos(), to: getPos() + 1 })
+                  .run();
               }
             };
             wrapper.appendChild(btn);
 
             let startX = 0;
             let startWidth = 0;
-            const resizeHandle = document.createElement("div");
-            resizeHandle.className = "tiptap-img-resize";
+            const resizeHandle = document.createElement('div');
+            resizeHandle.className = 'tiptap-img-resize';
             resizeHandle.onmousedown = (e) => {
               e.preventDefault();
               startX = e.clientX;
@@ -105,7 +110,7 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
               document.onmousemove = (moveEvent) => {
                 const newWidth = Math.max(32, startWidth + (moveEvent.clientX - startX));
                 img.width = newWidth;
-                if (typeof getPos === "function") {
+                if (typeof getPos === 'function') {
                   editor.commands.command(({ tr }) => {
                     tr.setNodeMarkup(getPos(), undefined, {
                       ...node.attrs,
@@ -143,12 +148,12 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
             ...this.parent?.(),
             backgroundColor: {
               default: null,
-              parseHTML: (element) => element.getAttribute("data-background-color"),
+              parseHTML: (element) => element.getAttribute('data-background-color'),
               renderHTML: (attributes) =>
                 attributes.backgroundColor
                   ? {
                       style: `background-color: ${attributes.backgroundColor}`,
-                      "data-background-color": attributes.backgroundColor,
+                      'data-background-color': attributes.backgroundColor,
                     }
                   : {},
             },
@@ -161,12 +166,12 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
             ...this.parent?.(),
             backgroundColor: {
               default: null,
-              parseHTML: (element) => element.getAttribute("data-background-color"),
+              parseHTML: (element) => element.getAttribute('data-background-color'),
               renderHTML: (attributes) =>
                 attributes.backgroundColor
                   ? {
                       style: `background-color: ${attributes.backgroundColor}`,
-                      "data-background-color": attributes.backgroundColor,
+                      'data-background-color': attributes.backgroundColor,
                     }
                   : {},
             },
@@ -180,10 +185,10 @@ export default function EditorClient({ content, onChange, showLinkUnlink = true 
     ],
     editorProps: {
       attributes: {
-        class: "prose dark:prose-invert min-h-[200px] p-2 focus:outline-none tiptap",
+        class: 'prose dark:prose-invert min-h-[200px] p-2 focus:outline-none tiptap',
       },
       handleClickOn(view, pos, node, nodePos) {
-        if (node.type.name === "image") {
+        if (node.type.name === 'image') {
           setSelectedImagePos({ from: nodePos, to: nodePos + node.nodeSize });
         } else {
           setSelectedImagePos(null);

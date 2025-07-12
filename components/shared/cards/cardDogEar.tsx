@@ -1,4 +1,4 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardTitle } from '@/components/ui/card';
 import { cn } from '@/lib/utils';
 import { cardHoverClass } from '@/utils/styles/card-hover';
 import { LucideIcon, StarIcon } from 'lucide-react';
@@ -29,15 +29,10 @@ const flapKeyframes = `
 
 const CardDogEar = ({ title, content, icon: Icon, imgUrl, href }: CardDogEarProps) => {
   const card = (
-    <Card
-      className={cardHoverClass}
-      style={{
-        transformStyle: 'preserve-3d',
-      }}
-    >
+    <Card className={cn(cardHoverClass, 'p-0 m-0')} style={{ transformStyle: 'preserve-3d' }}>
       <style>{flapKeyframes}</style>
 
-      {/* Dog Ear Effect */}
+      {/* Dog Ear */}
       <div
         className={cn(
           'absolute top-0 right-0 w-0 h-0 z-30',
@@ -45,10 +40,7 @@ const CardDogEar = ({ title, content, icon: Icon, imgUrl, href }: CardDogEarProp
           'origin-top-right',
           'animate-[dogEarSequence_6s_ease-in-out_infinite]'
         )}
-        style={{
-          transformStyle: 'preserve-3d',
-          backfaceVisibility: 'hidden',
-        }}
+        style={{ transformStyle: 'preserve-3d', backfaceVisibility: 'hidden' }}
       />
       <div
         className={cn(
@@ -66,24 +58,22 @@ const CardDogEar = ({ title, content, icon: Icon, imgUrl, href }: CardDogEarProp
         <StarIcon className="w-4 h-4" />
       </div>
 
-      {/* Image with zero spacing */}
+      {/* Image + Title Group (no gap) */}
       {imgUrl && (
-        <div className="w-full relative z-10">
+        <div className="w-full relative z-10 m-0 p-0">
           <img
             src={imgUrl}
             alt={title}
-            className="w-full h-32 object-cover m-0 p-0 block rounded-none"
-            style={{ borderRadius: 0 }}
+            className="w-full h-36 object-cover block m-0 p-0 rounded-none"
           />
+          <div className="bg-pink-800 text-white flex justify-between items-center px-4 py-3 m-0">
+            <CardTitle className="text-white text-base font-semibold m-0 p-0">{title}</CardTitle>
+            <Icon className="h-5 w-5 text-white" />
+          </div>
         </div>
       )}
 
-      {/* Title immediately follows image with no spacing */}
-      <CardHeader className="bg-pink-800 text-white flex items-center justify-between px-4 py-3 relative z-20 m-0 rounded-none">
-        <CardTitle className="text-white text-base font-semibold">{title}</CardTitle>
-        <Icon className="h-5 w-5 text-white" />
-      </CardHeader>
-
+      {/* Description */}
       <CardContent className="pt-2 pb-3 px-4 text-sm relative z-10">
         <p>{content}</p>
       </CardContent>

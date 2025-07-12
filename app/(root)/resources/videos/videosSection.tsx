@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import '@/assets/styles/video-style.css';
+import { cardHoverClass } from '@/utils/styles/card-hover';
+import clsx from 'clsx';
 
 type Video = {
   id: string;
@@ -30,8 +32,12 @@ declare global {
 const truncate = (str: string, max: number) =>
   str && str.length > max ? str.slice(0, max) + '...' : str;
 
-const VideosSection = () => {
-  const [videos, setVideos] = useState<Video[]>([]);
+type VideosSectionProps = {
+  videos?: Video[]; // Videos can be passed as prop
+};
+
+const VideosSection = ({ videos: propVideos }: VideosSectionProps) => {
+  const [videos, setVideos] = useState<Video[]>(propVideos || []);
   const [mainIndex, setMainIndex] = useState(0);
   const [thumbPage, setThumbPage] = useState(0);
   const [showRecommendations, setShowRecommendations] = useState(false);
@@ -42,8 +48,12 @@ const VideosSection = () => {
   const searchParams = useSearchParams();
   const urlVideoId = searchParams.get('video');
 
-  // Fetch videos
+  // Only fetch if videos prop not provided
   useEffect(() => {
+    if (propVideos && propVideos.length > 0) {
+      setVideos(propVideos);
+      return;
+    }
     const fetchVideos = async () => {
       try {
         const response = await fetch('/api/videos');
@@ -57,7 +67,7 @@ const VideosSection = () => {
       }
     };
     fetchVideos();
-  }, []);
+  }, [propVideos]);
 
   // Set mainIndex based on urlVideoId
   useEffect(() => {
@@ -87,6 +97,13 @@ const VideosSection = () => {
     document.body.appendChild(tag);
   }, []);
 
+  // --- URL Update Logic ---
+  const updateUrlWithVideo = (videoId: string) => {
+    const params = new URLSearchParams(Array.from(searchParams.entries()));
+    params.set('video', videoId);
+    router.replace(`?${params.toString()}`, { scroll: false });
+  };
+
   useEffect(() => {
     loadYouTubeAPI();
 
@@ -100,7 +117,16 @@ const VideosSection = () => {
         events: {
           onStateChange: (event: any) => {
             if (event.data === window.YT.PlayerState.ENDED) {
-              setShowRecommendations(true);
+              setShowRecommendations(false);
+              setMainIndex((prev) => {
+                if (prev < videos.length - 1) {
+                  updateUrlWithVideo(videos[prev + 1].id);
+                  return prev + 1;
+                } else {
+                  updateUrlWithVideo(videos[0].id);
+                  return 0;
+                }
+              });
             }
           },
           onReady: () => {
@@ -125,6 +151,8 @@ const VideosSection = () => {
         ytPlayerRef.current = null;
       }
     };
+    // mainIndex, videos, updateUrlWithVideo, loadYouTubeAPI are dependencies
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [mainIndex, videos, loadYouTubeAPI]);
 
   useEffect(() => {
@@ -161,13 +189,6 @@ const VideosSection = () => {
       if (row.length > 0) rows.push(row);
     }
     return rows;
-  };
-
-  // --- URL Update Logic ---
-  const updateUrlWithVideo = (videoId: string) => {
-    const params = new URLSearchParams(Array.from(searchParams.entries()));
-    params.set('video', videoId);
-    router.replace(`?${params.toString()}`, { scroll: false });
   };
 
   const handleRightThumbClick = () => {
@@ -259,7 +280,6 @@ const VideosSection = () => {
                     </div>
                   ))}
                 </div>
-                {/* No Close button here */}
               </div>
             )}
             <div className="main-video-overlay">
@@ -268,65 +288,7 @@ const VideosSection = () => {
             </div>
           </div>
         </div>
-
-        {/* Single thumbnail to the right */}
-        {/* <div className="md:w-1/3 w-full flex flex-col gap-4 my-auto">
-          {thumbnailVideo && (
-            <div
-              key={thumbnailVideo.id}
-              className="rounded-xl overflow-hidden shadow cursor-pointer flex flex-col bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700"
-              onClick={handleRightThumbClick}
-              style={{ height: `${THUMBNAIL_HEIGHT}px` }}
-            >
-              {thumbnailVideo.thumbnail && (
-                <img
-                  src={thumbnailVideo.thumbnail}
-                  alt={thumbnailVideo.title}
-                  className="w-full h-full object-cover"
-                  style={{
-                    borderTopLeftRadius: '0.75rem',
-                    borderTopRightRadius: '0.75rem',
-                    height: '70%',
-                  }}
-                />
-              )}
-              <div
-                className="bg-gray-200 dark:bg-neutral-800 text-gray-700 dark:text-gray-100 font-medium p-2 flex-1 flex items-center"
-                style={{ height: '30%' }}
-              >
-                <p className="text-sm font-medium truncate">{thumbnailVideo.title}</p>
-              </div>
-            </div>
-          )}
-        </div> */}
       </div>
-
-      {/* Related videos under the player when overlay is not shown */}
-      {/* {!showRecommendations && (
-        <div className="mt-4">
-          <h2 className="text-white text-lg font-bold mb-2">Related Videos</h2>
-          <div className="flex flex-wrap gap-4 justify-center">
-            {relatedVideos.map((video) => (
-              <div
-                key={video.id}
-                className="bg-gray-800 hover:bg-gray-700 rounded-lg cursor-pointer w-44 p-3 flex flex-col items-center"
-                onClick={() => handleRecommendationClick(video.id)}
-              >
-                {video.thumbnail && (
-                  <img
-                    src={video.thumbnail}
-                    alt={video.title}
-                    className="rounded-lg mb-2 w-full h-20 object-cover"
-                  />
-                )}
-                <div className="text-white text-sm font-semibold text-center mb-1">
-                  {truncate(video.title || '', 18)}
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      )} */}
 
       {/* 2 rows of thumbnails below, paginated 3 per row, pagination below last row */}
       {belowThumbnails.length > 0 && (
@@ -337,7 +299,10 @@ const VideosSection = () => {
                 {row.map(({ video, idx }) => (
                   <div
                     key={video.id}
-                    className="rounded-xl overflow-hidden shadow cursor-pointer flex flex-col bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700"
+                    className={clsx(
+                      'rounded-xl overflow-hidden shadow cursor-pointer flex flex-col bg-gray-200 dark:bg-neutral-800 hover:bg-gray-300 dark:hover:bg-neutral-700',
+                      cardHoverClass
+                    )}
                     onClick={() => handleBelowThumbClick(idx)}
                     style={{ width: '400px', height: `${THUMBNAIL_HEIGHT}px`, minWidth: '0' }}
                   >

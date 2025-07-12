@@ -16,11 +16,6 @@ import clsx from 'clsx';
 
 const themes = [
   {
-    name: 'System',
-    value: 'system',
-    icon: SunMoon,
-  },
-  {
     name: 'Dark',
     value: 'dark',
     icon: MoonIcon,
@@ -30,6 +25,11 @@ const themes = [
     value: 'light',
     icon: SunIcon,
   },
+  {
+    name: 'System',
+    value: 'system',
+    icon: SunMoon,
+  },
 ];
 
 const ModeToggle = () => {
@@ -38,6 +38,11 @@ const ModeToggle = () => {
 
   useEffect(() => {
     setMounted(true);
+
+    // Set default to dark on first visit if no theme is stored
+    if (!localStorage.getItem('theme')) {
+      setTheme('dark');
+    }
   }, []);
 
   if (!mounted) return null;
@@ -66,7 +71,7 @@ const ModeToggle = () => {
             key={value}
             onClick={() => setTheme(value)}
             className={clsx(
-              'flex items-center gap-2 text-sm px-2 py-1.5 rounded-md transition-colors my-1 ',
+              'flex items-center gap-2 text-sm px-2 py-1.5 rounded-md transition-colors my-1',
               theme === value
                 ? 'bg-accent font-semibold text-primary'
                 : 'hover:bg-accent text-foreground'
