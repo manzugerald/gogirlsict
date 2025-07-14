@@ -7,6 +7,8 @@ import { reportColumns } from "./reports";
 import { eventColumns } from "./events";
 import { institutionColumns } from "./institutions";
 import { beneficiaryColumns } from './beneficiaries';
+import { homepageColumns } from './homepage';
+import { messageColumns } from './messages';
 
 export const columns = {
   projects: projectColumns,
@@ -15,4 +17,6 @@ export const columns = {
   events: eventColumns,
   institutions: institutionColumns,
   beneficiaries: beneficiaryColumns,
+  homepage: homepageColumns,
+  messages: messageColumns,
 };

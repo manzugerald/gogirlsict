@@ -74,7 +74,7 @@ const CardDogEar = ({ title, content, icon: Icon, imgUrl, href }: CardDogEarProp
       )}
 
       {/* Description */}
-      <CardContent className="pt-2 pb-3 px-4 text-sm relative z-10">
+      <CardContent className="pt-2 pb-3 px-4 relative z-10 text-justify text-gray-900 dark:text-gray-200">
         <p>{content}</p>
       </CardContent>
     </Card>

@@ -255,6 +255,10 @@ function StatCard({ stat, index }: { stat: Stat; index: number }) {
           color: '#6b7280',
           fontWeight: 600,
           textAlign: 'center',
+          whiteSpace: 'nowrap',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          maxWidth: CARD_MIN_WIDTH,
         }}
       >
         {stat.label}

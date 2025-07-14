@@ -16,9 +16,9 @@ import {
   ChartOptions,
   Plugin,
 } from 'chart.js';
-import AnimatedStats from './animatedStats';
 import AnimatedPieceBarChart from './components/animatedPieceBarChart';
 import { cardHoverClass } from '@/utils/styles/card-hover';
+import { useHybridCachedData } from '@/utils/useHybridCachedData';
 
 ChartJS.register(CategoryScale, LinearScale, BarElement, Title, Tooltip, Legend, ArcElement);
 
@@ -33,84 +33,74 @@ type CountData = {
 
 const ANIMATION_DURATION = 4.2;
 
+// Centralized fetcher that combines all counts in one API call
+async function fetchDashboardCounts(): Promise<CountData> {
+  const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes, beneficiariesRes] =
+    await Promise.all([
+      fetch('/api/projects'),
+      fetch('/api/reports'),
+      fetch('/api/events'),
+      fetch('/api/users'),
+      fetch('/api/institutions'),
+      fetch('/api/beneficiaries'),
+    ]);
+  const [projects, reports, events, users, institutions, beneficiaries] = await Promise.all([
+    projectsRes.json(),
+    reportsRes.json(),
+    eventsRes.json(),
+    usersRes.json(),
+    institutionsRes.json(),
+    beneficiariesRes.json(),
+  ]);
+  return {
+    projects: Array.isArray(projects) ? projects.length : projects.count ?? 0,
+    reports: Array.isArray(reports) ? reports.length : reports.count ?? 0,
+    events: Array.isArray(events) ? events.length : events.count ?? 0,
+    users: Array.isArray(users) ? users.length : users.count ?? 0,
+    institutions: Array.isArray(institutions) ? institutions.length : institutions.count ?? 0,
+    beneficiaries: Array.isArray(beneficiaries) ? beneficiaries.length : beneficiaries.count ?? 0,
+  };
+}
+
 export default function DashboardChart() {
   const pathname = usePathname();
   const isAdmin = pathname === '/admin/dashboard';
 
-  const [counts, setCounts] = useState<CountData>({
+  // Use the hybrid cache with a unique key and a 30min stale time
+  const {
+    data: counts,
+    isLoading,
+    refresh,
+  } = useHybridCachedData<CountData>('dashboard-counts-v1', fetchDashboardCounts, {
+    staleTime: 1000 * 60 * 30,
+  });
+
+  const [loop, setLoop] = useState(0);
+  useEffect(() => {
+    const interval = setInterval(() => setLoop((v) => v + 1), (ANIMATION_DURATION + 0.7) * 1000);
+    return () => clearInterval(interval);
+  }, []);
+
+  const safeCounts: CountData = counts ?? {
     projects: 0,
     reports: 0,
     events: 0,
     users: 0,
     institutions: 0,
     beneficiaries: 0,
-  });
-  const [loading, setLoading] = useState(true);
-
-  useEffect(() => {
-    async function fetchCounts() {
-      setLoading(true);
-      try {
-        const [projectsRes, reportsRes, eventsRes, usersRes, institutionsRes, beneficiariesRes] =
-          await Promise.all([
-            fetch('/api/projects'),
-            fetch('/api/reports'),
-            fetch('/api/events'),
-            fetch('/api/users'),
-            fetch('/api/institutions'),
-            fetch('/api/beneficiaries'),
-          ]);
-        const [projects, reports, events, users, institutions, beneficiaries] = await Promise.all([
-          projectsRes.json(),
-          reportsRes.json(),
-          eventsRes.json(),
-          usersRes.json(),
-          institutionsRes.json(),
-          beneficiariesRes.json(),
-        ]);
-        setCounts({
-          projects: Array.isArray(projects) ? projects.length : projects.count ?? 0,
-          reports: Array.isArray(reports) ? reports.length : reports.count ?? 0,
-          events: Array.isArray(events) ? events.length : events.count ?? 0,
-          users: Array.isArray(users) ? users.length : users.count ?? 0,
-          institutions: Array.isArray(institutions) ? institutions.length : institutions.count ?? 0,
-          beneficiaries: Array.isArray(beneficiaries)
-            ? beneficiaries.length
-            : beneficiaries.count ?? 0,
-        });
-      } catch (err) {
-        setCounts({
-          projects: 0,
-          reports: 0,
-          events: 0,
-          users: 0,
-          institutions: 0,
-          beneficiaries: 0,
-        });
-      }
-      setLoading(false);
-    }
-    fetchCounts();
-  }, []);
-
-  const [loop, setLoop] = useState(0);
-
-  useEffect(() => {
-    const interval = setInterval(() => setLoop((v) => v + 1), (ANIMATION_DURATION + 0.7) * 1000);
-    return () => clearInterval(interval);
-  }, []);
+  };
 
   // Updated: Labels, values, and colors to include Institutions and Beneficiaries, and match animatedStats.tsx
   const labels = ['Projects', 'Reports', 'Events', 'Institutions', 'Beneficiaries'].concat(
     isAdmin ? ['Users'] : []
   );
   const dataValues = [
-    counts.projects,
-    counts.reports,
-    counts.events,
-    counts.institutions,
-    counts.beneficiaries,
-    ...(isAdmin ? [counts.users] : []),
+    safeCounts.projects,
+    safeCounts.reports,
+    safeCounts.events,
+    safeCounts.institutions,
+    safeCounts.beneficiaries,
+    ...(isAdmin ? [safeCounts.users] : []),
   ];
   const backgroundColors = [
     '#7c3aed', // Projects
@@ -197,7 +187,7 @@ export default function DashboardChart() {
     <div className="w-full">
       <div className="w-full pb-2">
         <CardContent className="flex flex-col items-center justify-center">
-          {loading ? (
+          {isLoading ? (
             <div className="text-center text-muted-foreground">Loading...</div>
           ) : (
             <div className="flex flex-col gap-6">
@@ -236,6 +226,15 @@ export default function DashboardChart() {
                   </div>
                 </div>
               </div>
+              {/* Optional: Add a refresh button */}
+              <div className="flex justify-center">
+                <button
+                  className="px-3 py-1 text-xs rounded bg-violet-700 text-white hover:bg-violet-800"
+                  onClick={refresh}
+                >
+                  Refresh Data
+                </button>
+              </div>
             </div>
           )}
         </CardContent>
@@ -243,5 +242,4 @@ export default function DashboardChart() {
     </div>
   );
 }
-// Note: This component is designed to be used in a Next.js app with server-side rendering.
-// It fetches data from the API and displays animated stats cards with a progress circle animation.
+// Note: This component assumes you have the necessary API endpoints set up to fetch the counts.
